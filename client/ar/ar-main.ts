@@ -14,6 +14,11 @@ import { SessionRecorder, type OpticsSnapshot } from './modules/session-recorder
 
 const API_ORIGIN = import.meta.env.VITE_API_URL || '';
 
+/** Resolve relative image URLs from server to full URL */
+function resolveUrl(url: string): string {
+  return url.startsWith('http') ? url : `${API_ORIGIN}${url}`;
+}
+
 // DOM elements
 const loadingScreen = document.getElementById('loading-screen')!;
 const loadingStatus = document.getElementById('loading-status')!;
@@ -349,7 +354,7 @@ function buildLensButtons(items: { id: string; name: string; image_url: string; 
     if (i === 0) btn.classList.add('ring-2', 'ring-white');
     btn.title = item.lens_color || item.name;
     const img = document.createElement('img');
-    img.src = item.image_url;
+    img.src = resolveUrl(item.image_url);
     img.className = 'w-full h-full object-cover rounded-full';
     img.draggable = false;
     btn.appendChild(img);
@@ -358,7 +363,7 @@ function buildLensButtons(items: { id: string; name: string; image_url: string; 
         b.classList.remove('ring-2', 'ring-white');
       });
       btn.classList.add('ring-2', 'ring-white');
-      renderer.setLensImage(item.image_url);
+      renderer.setLensImage(resolveUrl(item.image_url));
       // 罐頭訊息
       const lensName = item.name || item.lens_color || '此款式';
       addChatMessage(
@@ -375,7 +380,7 @@ function buildLensButtons(items: { id: string; name: string; image_url: string; 
     container.appendChild(btn);
   });
   // Activate first item
-  if (items.length > 0) renderer.setLensImage(items[0].image_url);
+  if (items.length > 0) renderer.setLensImage(resolveUrl(items[0].image_url));
 }
 
 async function fetchLensCatalog() {
@@ -771,13 +776,13 @@ function buildGlassesButtons(items: { id: string; name: string; image_url: strin
   const container = document.getElementById('glasses-options')!;
   container.innerHTML = '';
   items.forEach((item, idx) => {
-    registerGlassesUrl(item.id, item.image_url);
+    registerGlassesUrl(item.id, resolveUrl(item.image_url));
     const btn = document.createElement('button');
     btn.dataset.glasses = item.id;
     btn.className = `glasses-btn shrink-0 px-2 py-1 rounded-lg text-xs border transition flex flex-col items-center gap-1 ${idx === 0 ? 'active border-white/60 bg-white/20' : 'border-transparent bg-white/5'}`;
     btn.title = item.name;
     const thumb = document.createElement('img');
-    thumb.src = item.image_url;
+    thumb.src = resolveUrl(item.image_url);
     thumb.className = 'w-12 h-8 object-contain';
     thumb.alt = item.name;
     const label = document.createElement('span');
@@ -791,14 +796,14 @@ function buildGlassesButtons(items: { id: string; name: string; image_url: strin
       btn.classList.add('active', 'border-white/60', 'bg-white/20');
       btn.classList.remove('border-transparent', 'bg-white/5');
       usingCatalogGlasses = true;
-      glasses3DScene.setCatalogTexture(item.image_url);
+      glasses3DScene.setCatalogTexture(resolveUrl(item.image_url));
       glasses3DScene.setColor(item.temple_color ? parseInt(item.temple_color.replace('#', ''), 16) : 0x111418);
     });
     container.appendChild(btn);
   });
   if (items.length > 0) {
     usingCatalogGlasses = true;
-    glasses3DScene.setCatalogTexture(items[0].image_url);
+    glasses3DScene.setCatalogTexture(resolveUrl(items[0].image_url));
     const tc0 = items[0].temple_color;
     glasses3DScene.setColor(tc0 ? parseInt(tc0.replace('#', ''), 16) : 0x111418);
   }
@@ -847,7 +852,7 @@ function showFaceGlasses(htmlShape: string) {
     card.title = item.name;
 
     const thumb = document.createElement('img');
-    thumb.src = item.image_url;
+    thumb.src = resolveUrl(item.image_url);
     thumb.className = 'w-full h-10 object-contain bg-white rounded';
     thumb.alt = item.name;
 
@@ -859,7 +864,7 @@ function showFaceGlasses(htmlShape: string) {
     card.addEventListener('click', () => {
       usingCatalogGlasses = true;
       renderer.setMode('glasses');
-      glasses3DScene.setCatalogTexture(item.image_url);
+      glasses3DScene.setCatalogTexture(resolveUrl(item.image_url));
       glasses3DScene.setColor(item.temple_color ? parseInt(item.temple_color.replace('#', ''), 16) : 0x111418);
       modeGlasses.click();
       // highlight in top bar if present
