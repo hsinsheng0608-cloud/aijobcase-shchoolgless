@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { API_BASE, UPLOADS_BASE } from '../apiBase';
 
-const API = (import.meta as any).env?.VITE_API_URL ?? 'http://localhost:3001';
 const getToken = () => localStorage.getItem('edumind_token') ?? '';
 
 type ItemType = 'glasses' | 'lens';
@@ -63,7 +63,7 @@ export default function GlassesManagement() {
     setLoading(true);
     try {
       const q = filterType !== 'all' ? `?item_type=${filterType}` : '';
-      const r = await fetch(`${API}/api/glasses${q}`, { headers: authHeader });
+      const r = await fetch(`${API_BASE}/glasses${q}`, { headers: authHeader });
       const d = await r.json();
       if (d.success) setItems(d.data);
     } finally { setLoading(false); }
@@ -94,12 +94,12 @@ export default function GlassesManagement() {
     });
 
     try {
-      const r = await fetch(`${API}/api/glasses/upload`, {
+      const r = await fetch(`${API_BASE}/glasses/upload`, {
         method: 'POST', headers: authHeader, body: fd,
       });
       const d = await r.json();
       if (d.success) {
-        setSuccess(`✓ "${form.name}" 上傳成功`);
+        setSuccess(`"${form.name}" 上傳成功`);
         setForm({ name: '', item_type: 'glasses', frame_shape: '', thickness: '', material: '', style: '', suitable_face_types: [], lens_color: '', description: '' });
         if (fileRef.current) fileRef.current.value = '';
         fetchItems();
@@ -110,14 +110,14 @@ export default function GlassesManagement() {
 
   async function handleDelete(id: string, name: string) {
     if (!confirm(`確定刪除「${name}」？`)) return;
-    const r = await fetch(`${API}/api/glasses/${id}`, { method: 'DELETE', headers: authHeader });
+    const r = await fetch(`${API_BASE}/glasses/${id}`, { method: 'DELETE', headers: authHeader });
     const d = await r.json();
     if (d.success) { setSuccess(`已刪除「${name}」`); fetchItems(); }
     else setError(d.error || '刪除失敗');
   }
 
   async function handleToggleActive(item: GlassesItem) {
-    const r = await fetch(`${API}/api/glasses/${item.id}`, {
+    const r = await fetch(`${API_BASE}/glasses/${item.id}`, {
       method: 'PATCH',
       headers: { ...authHeader, 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_active: !item.is_active }),
@@ -126,10 +126,16 @@ export default function GlassesManagement() {
     if (d.success) fetchItems();
   }
 
-  const imgSrc = (url: string) => url.startsWith('/') ? `${API}${url}` : url;
+  const imgSrc = (url: string) => {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    // relative paths (e.g. /uploads/glasses/...) need backend origin prepended
+    const origin = UPLOADS_BASE.replace('/uploads', '');
+    return `${origin}${url}`;
+  };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-3 md:p-6 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">眼鏡 / 隱形眼鏡 管理</h1>
 
       {/* 上傳表單 */}
@@ -153,7 +159,7 @@ export default function GlassesManagement() {
           </div>
 
           {form.item_type === 'glasses' ? (
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">框型</label>
                 <select className="w-full border rounded-lg px-3 py-2 text-sm" value={form.frame_shape}
