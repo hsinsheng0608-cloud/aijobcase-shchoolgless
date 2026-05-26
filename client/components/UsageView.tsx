@@ -2,12 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { IconZap, IconChart, IconInfo } from './Icons';
 import { getAuthHeaders } from '../services/authService';
+import { API_BASE } from '../apiBase';
 
 const UsageView: React.FC = () => {
   const [usage, setUsage] = useState({ questionCount: 0, examCount: 0, questionLimit: 50, examLimit: 100 });
 
   useEffect(() => {
-    fetch('/api/users/usage', { headers: getAuthHeaders() })
+    fetch(`${API_BASE}/users/usage`, { headers: getAuthHeaders() })
       .then(r => r.json())
       .then(d => { if (d.success) setUsage(d.data); })
       .catch(console.error);

@@ -17,7 +17,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // ==================== Security ====================
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
 // ==================== Rate Limiting ====================
 const globalLimiter = rateLimit({
@@ -45,6 +45,7 @@ app.use(cors({
     if (/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) return callback(null, true);
     // Allow Render / Supabase / any HTTPS deploy
     if (/\.onrender\.com$/.test(origin) || /\.zeabur\.app$/.test(origin)) return callback(null, true);
+    if (/\.pages\.dev$/.test(origin)) return callback(null, true);
     console.warn(`CORS 拒絕: ${origin}`);
     callback(new Error('CORS 不允許此 origin'));
   },

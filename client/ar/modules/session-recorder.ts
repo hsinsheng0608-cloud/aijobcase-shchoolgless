@@ -2,6 +2,8 @@
  * session-recorder.ts - Records AR practice sessions to backend
  */
 
+const API_ORIGIN = import.meta.env.VITE_API_URL || '';
+
 export interface OpticsSnapshot {
   pdMm: number;
   pdLeftMm: number;
@@ -26,7 +28,7 @@ export class SessionRecorder {
 
   async startSession(): Promise<string | null> {
     try {
-      const res = await fetch('/api/ar-practice/sessions', {
+      const res = await fetch(`${API_ORIGIN}/api/ar-practice/sessions`, {
         method: 'POST',
         headers: getHeaders(),
       });
@@ -43,7 +45,7 @@ export class SessionRecorder {
   async logEvent(eventType: string, stepNumber?: number, metadata?: any) {
     if (!this.sessionId) return;
     try {
-      await fetch(`/api/ar-practice/sessions/${this.sessionId}/events`, {
+      await fetch(`${API_ORIGIN}/api/ar-practice/sessions/${this.sessionId}/events`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify({ eventType, stepNumber, metadata }),
@@ -61,7 +63,7 @@ export class SessionRecorder {
     if (!this.sessionId) return;
     const duration = Math.floor((Date.now() - this.startTime) / 1000);
     try {
-      await fetch(`/api/ar-practice/sessions/${this.sessionId}`, {
+      await fetch(`${API_ORIGIN}/api/ar-practice/sessions/${this.sessionId}`, {
         method: 'PATCH',
         headers: getHeaders(),
         body: JSON.stringify({

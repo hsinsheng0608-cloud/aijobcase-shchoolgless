@@ -336,4 +336,100 @@ router.get('/results', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/exams/qa-quiz?count=10&category=xxx
+ * 從 knowledge_qa 隨機抽題，生成選擇題（1正確+3干擾選項）
+ */
+router.get('/qa-quiz', async (req, res) => {
+  try {
+    const count = Math.min(parseInt(req.query.count) || 10, 20);
+    const { category, courseId } = req.query;
+
+    let whereClause = 'WHERE q.is_active = true';
+    const params = [];
+    let paramIdx = 1;
+
+    if (courseId) {
+      whereClause += ` AND q.course_id = $${paramIdx}`;
+      params.push(courseId);
+      paramIdx++;
+    }
+    if (category) {
+      whereClause += ` AND q.category = $${paramIdx}`;
+      params.push(category);
+      paramIdx++;
+    }
+
+    // 抽出題目
+    const { rows: questions } = await pool.query(
+      `SELECT id, question, answer, category FROM knowledge_qa q
+       ${whereClause}
+       ORDER BY RANDOM() LIMIT $${paramIdx}`,
+      [...params, count]
+    );
+
+    if (questions.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
+
+    // 為每題抽 3 個干擾選項（來自其他題目的答案）
+    const allQuestionIds = questions.map(q => q.id);
+    const { rows: distractorPool } = await pool.query(
+      `SELECT id, answer FROM knowledge_qa
+       WHERE is_active = true AND id != ALL($1)
+       ORDER BY RANDOM() LIMIT $2`,
+      [allQuestionIds, questions.length * 3 + 10]
+    );
+
+    const quizItems = questions.map((q, i) => {
+      // 取 3 個干擾（循環取用，避免重複）
+      const distractors = [];
+      for (let d = 0; d < 3; d++) {
+        const poolIdx = (i * 3 + d) % Math.max(distractorPool.length, 1);
+        const distractor = distractorPool[poolIdx]?.answer;
+        if (distractor && !distractors.includes(distractor)) {
+          distractors.push(distractor);
+        }
+      }
+      while (distractors.length < 3) {
+        distractors.push('（無干擾選項）');
+      }
+
+      // 正確答案插入隨機位置
+      const correctIndex = Math.floor(Math.random() * 4);
+      const options = [...distractors];
+      options.splice(correctIndex, 0, q.answer);
+
+      return {
+        id: q.id,
+        category: q.category,
+        question: q.question,
+        options,
+        correctIndex,
+      };
+    });
+
+    res.json({ success: true, data: quizItems });
+  } catch (err) {
+    safeError(res, err, 'GET /api/exams/qa-quiz');
+  }
+});
+
+/**
+ * GET /api/exams/qa-categories
+ * 取得所有可用分類
+ */
+router.get('/qa-categories', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT category, COUNT(*) as count
+       FROM knowledge_qa WHERE is_active = true
+       GROUP BY category ORDER BY category`
+    );
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    safeError(res, err, 'GET /api/exams/qa-categories');
+  }
+});
+
 module.exports = router;

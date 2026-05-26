@@ -17,12 +17,21 @@ import QuizPage from './components/QuizPage';
 import SystemManual from './components/SystemManual';
 import { UserRole, User } from './types';
 import { authService } from './services/authService';
+import OnboardingTour from './components/OnboardingTour';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(authService.getCurrentUser());
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    return !localStorage.getItem('edumind_onboarded');
+  });
+
+  const completeOnboarding = () => {
+    localStorage.setItem('edumind_onboarded', 'true');
+    setShowOnboarding(false);
+  };
 
   if (!user) {
     return <LoginView onLoginSuccess={() => {
@@ -73,6 +82,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {showOnboarding && <OnboardingTour onComplete={completeOnboarding} />}
       <Sidebar
         currentRole={user.role}
         userName={user.name}

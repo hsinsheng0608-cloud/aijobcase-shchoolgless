@@ -1,13 +1,18 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { recommend, FACE_SHAPE_LABELS, FACE_SHAPE_DESCRIPTIONS } from '../ar/modules/recommendation-engine';
 import type { GlassesItem, RecommendationResult } from '../ar/modules/recommendation-engine';
 import type { FaceShape } from '../ar/modules/face-shape-analyzer';
+import {
+  IconTarget, IconPerson, IconCheck, IconWarning,
+  IconFaceRound, IconFaceOval, IconFaceSquare, IconFaceHeart, IconFaceLong,
+} from './Icons';
 
-const API = (import.meta as any).env?.VITE_API_URL ?? 'http://localhost:3001';
+const API = import.meta.env.VITE_API_URL || '';
 const getToken = () => localStorage.getItem('edumind_token') ?? '';
 
-const FACE_SHAPE_ICONS: Record<FaceShape, string> = {
-  round: '⬤', oval: '🥚', square: '⬛', heart: '♥', long: '▮',
+const FACE_SHAPE_ICONS: Record<FaceShape, React.FC<{ className?: string }>> = {
+  round: IconFaceRound, oval: IconFaceOval, square: IconFaceSquare,
+  heart: IconFaceHeart, long: IconFaceLong,
 };
 
 const FRAME_LABELS: Record<string, string> = {
@@ -77,7 +82,11 @@ export default function FaceShapeRecommendation({ detectedFaceShape, onSelectIte
     }
   }
 
-  const imgSrc = (url: string) => url.startsWith('/') ? `${API}${url}` : url;
+  const imgSrc = (url: string) => {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    return url;
+  };
   const allFaceShapes: FaceShape[] = ['round', 'oval', 'square', 'heart', 'long'];
 
   return (
@@ -88,14 +97,15 @@ export default function FaceShapeRecommendation({ detectedFaceShape, onSelectIte
         <p className="text-sm text-gray-500 mt-0.5">選擇臉型，系統推薦最適合的鏡框與隱形眼鏡</p>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
         {/* 左側：臉型選擇 */}
-        <div className="w-56 bg-white border-r p-4 flex flex-col gap-2 overflow-y-auto">
+        <div className="w-full md:w-56 bg-white border-b md:border-b-0 md:border-r p-4 flex flex-col gap-2 overflow-y-auto max-h-48 md:max-h-none">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">選擇臉型</p>
 
           {detectedFaceShape && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-2 text-xs text-blue-700">
-              🎯 AR 自動辨識：{FACE_SHAPE_LABELS[detectedFaceShape]}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-2 text-xs text-blue-700 flex items-center gap-1.5">
+              <IconTarget className="w-4 h-4 flex-shrink-0" />
+              AR 自動辨識：{FACE_SHAPE_LABELS[detectedFaceShape]}
             </div>
           )}
 
@@ -107,7 +117,7 @@ export default function FaceShapeRecommendation({ detectedFaceShape, onSelectIte
                   : 'bg-white text-gray-700 border-gray-200 hover:border-blue-400 hover:bg-blue-50'
               }`}>
               <div className="flex items-center gap-2">
-                <span className="text-lg">{FACE_SHAPE_ICONS[shape]}</span>
+                {React.createElement(FACE_SHAPE_ICONS[shape], { className: 'w-5 h-5 flex-shrink-0' })}
                 <div>
                   <p className="font-semibold text-sm">{FACE_SHAPE_LABELS[shape]}</p>
                   <p className={`text-xs mt-0.5 ${faceShape === shape ? 'text-blue-100' : 'text-gray-400'}`}>
@@ -136,7 +146,7 @@ export default function FaceShapeRecommendation({ detectedFaceShape, onSelectIte
         <div className="flex-1 overflow-y-auto p-6">
           {!faceShape ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-400">
-              <span className="text-5xl mb-4">👤</span>
+              <IconPerson className="w-16 h-16 mb-4" />
               <p className="text-lg font-medium">請選擇臉型</p>
               <p className="text-sm mt-1">或開啟攝影機自動辨識</p>
             </div>
@@ -182,7 +192,7 @@ export default function FaceShapeRecommendation({ detectedFaceShape, onSelectIte
 
                       {selectedItem?.id === item.id && (
                         <div className="absolute inset-0 bg-blue-500/10 flex items-center justify-center">
-                          <span className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">✓</span>
+                          <span className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center"><IconCheck className="w-4 h-4" /></span>
                         </div>
                       )}
                     </div>
@@ -208,14 +218,14 @@ export default function FaceShapeRecommendation({ detectedFaceShape, onSelectIte
                         <div className="mt-2 pt-2 border-t">
                           {reasons.slice(0, 1).map((r, i) => (
                             <p key={i} className="text-xs text-green-700 flex items-start gap-1">
-                              <span>✓</span><span>{r}</span>
+                              <IconCheck className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /><span>{r}</span>
                             </p>
                           ))}
                         </div>
                       )}
                       {warnings.length > 0 && (
                         <p className="text-xs text-amber-600 mt-1 flex items-start gap-1">
-                          <span>⚠</span><span>{warnings[0]}</span>
+                          <IconWarning className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /><span>{warnings[0]}</span>
                         </p>
                       )}
                     </div>

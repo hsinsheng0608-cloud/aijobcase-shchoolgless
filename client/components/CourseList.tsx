@@ -61,7 +61,7 @@ const CourseList: React.FC<CourseListProps> = ({ userRole, onSelectCourse }) => 
         </form>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         {courses.map((course) => (
           <div key={course.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all p-6 group">
             <div className="flex justify-between items-start mb-4">
@@ -85,7 +85,7 @@ const CourseList: React.FC<CourseListProps> = ({ userRole, onSelectCourse }) => 
 
             <button onClick={() => onSelectCourse(course.id)}
               className="w-full bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 flex items-center justify-center gap-2">
-              <IconZap className="w-4 h-4" /> 進入 AI 教室
+              <IconZap className="w-4 h-4" /> 進入該課程
             </button>
           </div>
         ))}

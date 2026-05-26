@@ -3,6 +3,8 @@
  * Reuses the same backend API as the main system's chatService
  */
 
+const API_ORIGIN = import.meta.env.VITE_API_URL || '';
+
 function getToken(): string | null {
   return localStorage.getItem('edumind_token');
 }
@@ -27,7 +29,7 @@ export async function sendChatMessage(
     if (courseId) body.courseId = courseId;
     if (arContext) body.arContext = arContext;
 
-    const res = await fetch('/api/chat/stream', {
+    const res = await fetch(`${API_ORIGIN}/api/chat/stream`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(body),

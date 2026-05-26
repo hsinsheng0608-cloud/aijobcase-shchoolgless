@@ -136,3 +136,50 @@ export const IconEye = ({ className = "w-5 h-5" }) => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
   </svg>
 );
+
+export const IconWarning = ({ className = "w-5 h-5" }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+  </svg>
+);
+
+export const IconPerson = ({ className = "w-5 h-5" }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+export const IconFaceRound = ({ className = "w-5 h-5" }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <circle cx="12" cy="12" r="8" strokeWidth={2} />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 14s1 1 3 1 3-1 3-1M9 10h.01M15 10h.01" />
+  </svg>
+);
+
+export const IconFaceOval = ({ className = "w-5 h-5" }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <ellipse cx="12" cy="12" rx="6" ry="8" strokeWidth={2} />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.5 14s.8 1 2.5 1 2.5-1 2.5-1M9.5 10h.01M14.5 10h.01" />
+  </svg>
+);
+
+export const IconFaceSquare = ({ className = "w-5 h-5" }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <rect x="5" y="4" width="14" height="16" rx="3" strokeWidth={2} />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 14s1 1 3 1 3-1 3-1M9 10h.01M15 10h.01" />
+  </svg>
+);
+
+export const IconFaceHeart = ({ className = "w-5 h-5" }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 20c0 0-8-5.5-8-11.5a4.5 4.5 0 019-.5 4.5 4.5 0 019 .5c0 6-8 11.5-8 11.5z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.5 11s.8.8 2.5.8 2.5-.8 2.5-.8M9.5 8.5h.01M14.5 8.5h.01" />
+  </svg>
+);
+
+export const IconFaceLong = ({ className = "w-5 h-5" }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <ellipse cx="12" cy="12" rx="5" ry="9" strokeWidth={2} />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.5 14s.8 1 2.5 1 2.5-1 2.5-1M9.5 10h.01M14.5 10h.01" />
+  </svg>
+);

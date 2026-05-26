@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { UserRole } from '../types';
 import { IconUser, IconZap } from './Icons';
 import { getAuthHeaders, authService } from '../services/authService';
+import { API_BASE } from '../apiBase';
 
 function generatePassword(length = 8): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
@@ -37,7 +38,7 @@ const AdminUserManagement: React.FC = () => {
   }, []);
 
   function fetchUsers() {
-    fetch('/api/users', { headers: getAuthHeaders() })
+    fetch(`${API_BASE}/users`, { headers: getAuthHeaders() })
       .then(r => r.json())
       .then(d => { if (d.success) setUsers(d.data); })
       .catch(console.error);
@@ -233,6 +234,7 @@ const AdminUserManagement: React.FC = () => {
 
       {/* Existing Users Table */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-black tracking-widest">
             <tr>
@@ -270,6 +272,7 @@ const AdminUserManagement: React.FC = () => {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

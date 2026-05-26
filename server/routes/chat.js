@@ -6,6 +6,7 @@ const { pool } = require('../db');
 const safeError = require('../safeError');
 const { chatStream } = require('../services/geminiService');
 const { search } = require('../services/vectorSearchService');
+const { acquire, release } = require('../services/geminiQueue');
 
 const router = express.Router();
 
@@ -83,36 +84,49 @@ router.post('/stream', async (req, res) => {
     const { rows: historyRows } = await pool.query(historyQuery, historyParams);
     const history = historyRows.reverse(); // 轉回時間正序
 
-    // 4. 設定 SSE headers
+    // 4. 設定 SSE headers（立刻開連線，前端進入「思考中」狀態）
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no'); // Nginx/Zeabur 禁止緩衝
     res.flushHeaders();
 
-    // 5. 送出來源資訊
-    const sourcesData = sources.map(s => ({
-      content: s.content.slice(0, 200) + '...',
-      metadata: s.metadata,
-      similarity: Math.round(s.similarity * 100) / 100,
-    }));
-    res.write(`data: ${JSON.stringify({ type: 'sources', data: sourcesData })}\n\n`);
+    // 5. 排隊等候 Gemini 名額（期間每 3 秒送 heartbeat 保持連線）
+    const heartbeat = setInterval(() => {
+      if (!res.writableEnded) res.write(': heartbeat\n\n');
+    }, 3000);
 
-    // 6. 串流 Gemini 回覆（傳入 history，啟動記憶體）
-    let fullResponse = '';
-    const stream = chatStream(message, context, history, arContext);
-    for await (const chunk of stream) {
-      fullResponse += chunk;
-      res.write(`data: ${JSON.stringify({ type: 'token', text: chunk })}\n\n`);
+    await acquire(); // 等到有空位才繼續
+    clearInterval(heartbeat);
+
+    try {
+      // 6. 送出來源資訊
+      const sourcesData = sources.map(s => ({
+        content: s.content.slice(0, 200) + '...',
+        metadata: s.metadata,
+        similarity: Math.round(s.similarity * 100) / 100,
+      }));
+      res.write(`data: ${JSON.stringify({ type: 'sources', data: sourcesData })}\n\n`);
+
+      // 7. 串流 Gemini 回覆（傳入 history，啟動記憶體）
+      let fullResponse = '';
+      const stream = chatStream(message, context, history, arContext);
+      for await (const chunk of stream) {
+        fullResponse += chunk;
+        res.write(`data: ${JSON.stringify({ type: 'token', text: chunk })}\n\n`);
+      }
+
+      // 8. 完成
+      res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+      res.end();
+
+      // 9. 背景存聊天紀錄
+      saveMessages(req.user.id, courseId ?? null, message, fullResponse, sourcesData)
+        .catch(err => console.error('存聊天紀錄失敗:', err.message));
+
+    } finally {
+      release(); // 無論成功或失敗都要釋放名額
     }
-
-    // 7. 完成
-    res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
-    res.end();
-
-    // 8. 背景存聊天紀錄（courseId 可能為 undefined，轉成明確的 null）
-    saveMessages(req.user.id, courseId ?? null, message, fullResponse, sourcesData)
-      .catch(err => console.error('存聊天紀錄失敗:', err.message));
 
   } catch (err) {
     // SSE 已開始就不能送 JSON error，改用 SSE error event

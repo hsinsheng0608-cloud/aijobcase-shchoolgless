@@ -123,6 +123,24 @@ export default function Dashboard({ role }: { role: UserRole }) {
           </div>
         </div>
       </div>
+      {/* 快速操作 */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 md:p-5">
+        <h3 className="font-bold text-slate-700 text-sm mb-3">快速操作</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {[
+            { label: '教材管理', desc: '上傳課程教材', icon: '📄', color: 'bg-blue-50 border-blue-100 hover:bg-blue-100' },
+            { label: '問答管理', desc: '新增知識庫問答', icon: '💬', color: 'bg-indigo-50 border-indigo-100 hover:bg-indigo-100' },
+            { label: 'AR 練習報表', desc: '查看學生練習', icon: '📊', color: 'bg-purple-50 border-purple-100 hover:bg-purple-100' },
+            { label: '測驗系統', desc: '出題與測驗', icon: '📝', color: 'bg-amber-50 border-amber-100 hover:bg-amber-100' },
+          ].map(action => (
+            <div key={action.label} className={`flex flex-col gap-1 p-3 rounded-xl border cursor-pointer transition-all ${action.color}`}>
+              <span className="text-xl">{action.icon}</span>
+              <p className="text-xs font-bold text-slate-800">{action.label}</p>
+              <p className="text-[10px] text-slate-500 hidden sm:block">{action.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
       {renderCharts()}
     </div>
   );

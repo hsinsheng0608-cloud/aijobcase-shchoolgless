@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getAuthHeaders } from '../services/authService';
 
+const ORIGIN = import.meta.env.VITE_API_URL || '';
+
 interface QA {
   id: string;
   course_id: string | null;
@@ -14,7 +16,7 @@ interface QA {
 interface Course { id: string; name: string; }
 
 const api = (path: string, opts?: RequestInit) =>
-  fetch(path, { headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }, ...opts });
+  fetch(`${ORIGIN}${path}`, { headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }, ...opts });
 
 const KnowledgeManagement: React.FC = () => {
   const [items, setItems] = useState<QA[]>([]);
@@ -121,6 +123,7 @@ const KnowledgeManagement: React.FC = () => {
       {/* Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         {loading ? (
+
           <div className="py-16 text-center text-slate-400">載入中...</div>
         ) : items.length === 0 ? (
           <div className="py-16 text-center text-slate-400">
@@ -128,27 +131,31 @@ const KnowledgeManagement: React.FC = () => {
             <p className="text-sm">點擊「新增問答」開始建立知識庫</p>
           </div>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="text-left px-5 py-3 text-slate-500 font-medium w-24">分類</th>
-                <th className="text-left px-5 py-3 text-slate-500 font-medium">問題</th>
-                <th className="text-left px-5 py-3 text-slate-500 font-medium hidden lg:table-cell">答案（預覽）</th>
-                <th className="px-5 py-3 text-slate-500 font-medium w-28">操作</th>
+                <th className="text-left px-4 py-3 text-slate-500 font-medium w-24 hidden md:table-cell">分類</th>
+                <th className="text-left px-4 py-3 text-slate-500 font-medium">問題</th>
+                <th className="text-left px-4 py-3 text-slate-500 font-medium hidden lg:table-cell">答案（預覽）</th>
+                <th className="px-4 py-3 text-slate-500 font-medium w-20">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {items.map(item => (
                 <tr key={item.id} className="hover:bg-slate-50 transition">
-                  <td className="px-5 py-3">
-                    <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium">{item.category}</span>
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap">{item.category}</span>
                   </td>
-                  <td className="px-5 py-3 text-slate-700 font-medium">{item.question}</td>
-                  <td className="px-5 py-3 text-slate-500 hidden lg:table-cell">
+                  <td className="px-4 py-3">
+                    <span className="md:hidden inline-block bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium mb-1">{item.category}</span>
+                    <p className="text-slate-700 font-medium leading-snug">{item.question}</p>
+                  </td>
+                  <td className="px-4 py-3 text-slate-500 hidden lg:table-cell">
                     {item.answer.length > 80 ? item.answer.slice(0, 80) + '…' : item.answer}
                   </td>
-                  <td className="px-5 py-3">
-                    <div className="flex gap-2 justify-center">
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col gap-1.5 items-center">
                       <button onClick={() => openEdit(item)}
                         className="text-indigo-600 hover:text-indigo-800 text-xs font-medium">編輯</button>
                       <button onClick={() => handleDelete(item.id)}
@@ -159,6 +166,7 @@ const KnowledgeManagement: React.FC = () => {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
@@ -206,7 +214,7 @@ const KnowledgeManagement: React.FC = () => {
                 className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg transition">取消</button>
               <button onClick={handleSave} disabled={saving}
                 className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition disabled:opacity-50">
-                {saving ? '儲存中（產生 embedding）...' : '儲存'}
+                {saving ? '儲存中...' : '儲存'}
               </button>
             </div>
           </div>

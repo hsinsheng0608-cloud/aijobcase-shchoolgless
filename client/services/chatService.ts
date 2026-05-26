@@ -1,7 +1,7 @@
 
 import { getAuthHeaders } from './authService';
 
-const API_BASE = '/api';
+import { API_BASE } from '../apiBase';
 
 export interface StreamEvent {
   type: 'sources' | 'token' | 'done' | 'error';

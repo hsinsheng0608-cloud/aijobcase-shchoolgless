@@ -1,7 +1,7 @@
 
 import { User, UserRole } from '../types';
 
-const API_BASE = '/api';
+import { API_BASE } from '../apiBase';
 
 export class AuthService {
   private currentUser: User | null = null;

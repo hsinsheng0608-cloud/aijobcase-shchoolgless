@@ -2,7 +2,7 @@
 import { getAuthHeaders } from './authService';
 import { Course } from '../types';
 
-const API_BASE = '/api';
+import { API_BASE } from '../apiBase';
 
 export async function getCourses(): Promise<Course[]> {
   const res = await fetch(`${API_BASE}/courses`, { headers: getAuthHeaders() });

@@ -1,197 +1,247 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getAuthHeaders } from '../services/authService';
-import { IconChat, IconMic, IconSend } from './Icons';
+import { API_BASE } from '../apiBase';
 
-interface Message {
+interface QA {
   id: string;
-  role: 'user' | 'system';
-  content: string;
-  source?: { question: string; category: string; similarity: number };
-  timestamp: string;
+  category: string;
+  question: string;
+  answer: string;
+  course_id: string | null;
 }
 
 interface AIChatViewProps {
   courseId: string;
+  onBack?: () => void;
 }
 
-const AIChatView: React.FC<AIChatViewProps> = ({ courseId }) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1', role: 'system',
-      content: '你好！歡迎使用課業問答系統。\n\n請輸入你的問題，系統會從知識庫中找到最相關的解答。',
-      timestamp: new Date().toISOString(),
-    }
-  ]);
-  const [input, setInput] = useState('');
+const AIChatView: React.FC<AIChatViewProps> = ({ courseId, onBack }) => {
+  const [items, setItems] = useState<QA[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [activeCategory, setActiveCategory] = useState('全部');
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<any>(null);
+  const [searchResults, setSearchResults] = useState<(QA & { similarity: number })[] | null>(null);
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // 載入所有問答
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages, searching]);
-
-  const handleSearch = async (query: string) => {
-    if (!query.trim()) return;
-
-    const userMsg: Message = {
-      id: Date.now().toString(), role: 'user', content: query,
-      timestamp: new Date().toISOString(),
+    const load = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (courseId) params.set('course_id', courseId);
+        const res = await fetch(`${API_BASE}/knowledge?${params}`, {
+          headers: getAuthHeaders(),
+        });
+        const data = await res.json();
+        setItems(data.data ?? []);
+      } catch {
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
     };
-    setMessages(prev => [...prev, userMsg]);
-    setInput('');
-    setSearching(true);
+    load();
+  }, [courseId]);
 
-    try {
-      const res = await fetch('/api/knowledge/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-        body: JSON.stringify({ query, course_id: courseId || undefined, top_k: 1 }),
-      });
-      const data = await res.json();
-      const results = data.data ?? [];
+  // 即時搜尋（有輸入才用 API search）
+  useEffect(() => {
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    if (!search.trim()) { setSearchResults(null); return; }
 
-      let reply: Message;
-      if (results.length > 0) {
-        const top = results[0];
-        const pct = Math.round(top.similarity * 100);
-        reply = {
-          id: (Date.now() + 1).toString(),
-          role: 'system',
-          content: top.answer,
-          source: { question: top.question, category: top.category, similarity: pct },
-          timestamp: new Date().toISOString(),
-        };
-      } else {
-        reply = {
-          id: (Date.now() + 1).toString(),
-          role: 'system',
-          content: '目前知識庫中找不到與您問題相關的答案。\n\n建議您聯繫老師，或換個方式重新描述問題。',
-          timestamp: new Date().toISOString(),
-        };
+    searchTimeout.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(`${API_BASE}/knowledge/search`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+          body: JSON.stringify({ query: search.trim(), course_id: courseId || undefined, top_k: 10 }),
+        });
+        const data = await res.json();
+        setSearchResults(data.data ?? []);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
       }
-      setMessages(prev => [...prev, reply]);
-    } catch {
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(), role: 'system',
-        content: '查詢失敗，請稍後再試。',
-        timestamp: new Date().toISOString(),
-      }]);
-    } finally {
-      setSearching(false);
-    }
+    }, 400);
+  }, [search, courseId]);
+
+  const categories = ['全部', ...Array.from(new Set(items.map(i => i.category))).sort()];
+
+  const displayItems: (QA & { similarity?: number })[] = searchResults !== null
+    ? searchResults
+    : items.filter(i => activeCategory === '全部' || i.category === activeCategory);
+
+  const toggle = (id: string) => setExpanded(prev => prev === id ? null : id);
+
+  const categoryColors: Record<string, string> = {
+    '視光產業現況': 'bg-blue-50 text-blue-700 border-blue-200',
+    '度量衡與誤差': 'bg-purple-50 text-purple-700 border-purple-200',
+    'OK鏡與近視防控': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'AI學習工具': 'bg-amber-50 text-amber-700 border-amber-200',
+    '醫病溝通與服務': 'bg-rose-50 text-rose-700 border-rose-200',
+    '國考重點': 'bg-red-50 text-red-700 border-red-200',
   };
-
-  const toggleMic = () => {
-    if (isListening) { recognitionRef.current?.stop(); return; }
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) { alert('您的瀏覽器不支援語音辨識'); return; }
-    const rec = new SR();
-    rec.lang = 'zh-TW';
-    rec.interimResults = true;
-    rec.continuous = true;
-    let final = '';
-    rec.onstart = () => { setIsListening(true); setInput(''); };
-    rec.onresult = (e: any) => {
-      let interim = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) final += e.results[i][0].transcript;
-        else interim += e.results[i][0].transcript;
-      }
-      const full = final + interim;
-      if (full.includes('送出') || full.includes('發送')) {
-        rec.stop();
-        const clean = full.replace(/送出|發送/g, '').trim();
-        if (clean) handleSearch(clean);
-        return;
-      }
-      setInput(final || interim);
-    };
-    rec.onend = () => { setIsListening(false); if (final.trim()) setInput(final); };
-    recognitionRef.current = rec;
-    rec.start();
-  };
+  const defaultColor = 'bg-slate-50 text-slate-600 border-slate-200';
+  const catColor = (c: string) => categoryColors[c] ?? defaultColor;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-      <div className="p-4 border-b bg-slate-50 flex items-center gap-2">
-        <IconChat className="w-5 h-5 text-indigo-600" />
-        <h2 className="font-semibold text-slate-700">課業問答</h2>
-        <span className="ml-auto text-xs text-slate-400 bg-white border border-slate-200 px-2 py-1 rounded-full">
-          知識庫查詢
-        </span>
+    <div className="flex flex-col h-[calc(100vh-11rem)] md:h-[calc(100vh-8rem)] bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+
+      {/* Header */}
+      <div className="px-4 md:px-6 py-3 md:py-4 border-b bg-gradient-to-r from-indigo-50 to-white flex-shrink-0">
+        <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center gap-2 min-w-0">
+            {onBack && (
+              <button onClick={onBack} className="flex items-center justify-center w-8 h-8 rounded-lg text-indigo-600 hover:bg-indigo-100 transition-colors flex-shrink-0" aria-label="返回課程">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+              </button>
+            )}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base md:text-lg font-bold text-slate-800 whitespace-nowrap">課業問答</h2>
+                <span className="hidden sm:inline text-xs bg-indigo-100 text-indigo-600 px-2.5 py-0.5 rounded-full font-medium whitespace-nowrap">課後複習</span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5 truncate">共 {items.length} 個問答 · 點擊展開解答</p>
+            </div>
+          </div>
+          <span className="sm:hidden flex-shrink-0 text-xs bg-indigo-100 text-indigo-600 px-2.5 py-1 rounded-full font-medium whitespace-nowrap ml-2">
+            課後複習
+          </span>
+        </div>
+
+        {/* 搜尋框 */}
+        <div className="relative">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          {searching && (
+            <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+          )}
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="搜尋關鍵字，例如：OK鏡、散光、老花眼..."
+            className="w-full pl-9 pr-9 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-700 placeholder-slate-400"
+          />
+          {search && (
+            <button onClick={() => setSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-5 bg-slate-50/50">
-        {messages.map((m) => (
-          <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${
-              m.role === 'user'
-                ? 'bg-indigo-600 text-white rounded-tr-none'
-                : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none'
-            }`}>
-              <p className="text-sm leading-relaxed whitespace-pre-line">{m.content}</p>
-
-              {m.source && (
-                <div className="mt-3 pt-3 border-t border-slate-100">
-                  <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">來源問題</p>
-                  <p className="text-xs text-slate-600 italic">「{m.source.question}」</p>
-                  <div className="flex gap-2 mt-1.5">
-                    <span className="text-[9px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-medium">
-                      {m.source.category}
-                    </span>
-                    <span className="text-[9px] bg-green-50 text-green-700 px-2 py-0.5 rounded font-medium">
-                      相似度 {m.source.similarity}%
-                    </span>
-                  </div>
-                </div>
+      {/* 分類 Tabs（搜尋時隱藏）*/}
+      {!search && (
+        <div className="flex gap-2 px-6 py-3 overflow-x-auto flex-shrink-0 border-b border-slate-100 bg-white scrollbar-hide">
+          {categories.map(cat => (
+            <button key={cat}
+              onClick={() => { setActiveCategory(cat); setExpanded(null); }}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                activeCategory === cat
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-200'
+                  : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
+              }`}>
+              {cat}
+              {cat !== '全部' && (
+                <span className="ml-1 opacity-60">
+                  {items.filter(i => i.category === cat).length}
+                </span>
               )}
-            </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Q&A 列表 */}
+      <div className="flex-1 overflow-y-auto p-5 space-y-2.5">
+
+        {loading && (
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
+            <svg className="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+            <span className="text-sm">載入中...</span>
+          </div>
+        )}
+
+        {!loading && displayItems.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
+            <svg className="w-12 h-12 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <p className="text-sm">{search ? `找不到「${search}」相關問答` : '此分類尚無問答'}</p>
+          </div>
+        )}
+
+        {!loading && displayItems.map((item) => (
+          <div key={item.id}
+            className={`rounded-xl border transition-all duration-200 overflow-hidden ${
+              expanded === item.id
+                ? 'border-indigo-200 shadow-md shadow-indigo-50'
+                : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
+            }`}>
+
+            {/* 問題列 */}
+            <button
+              onClick={() => toggle(item.id)}
+              className="w-full text-left px-5 py-4 flex items-start gap-3 bg-white group">
+
+              {/* 展開箭頭 */}
+              <svg className={`w-4 h-4 mt-0.5 text-slate-400 flex-shrink-0 transition-transform duration-200 ${expanded === item.id ? 'rotate-180 text-indigo-500' : ''}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
+              </svg>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${catColor(item.category)}`}>
+                    {item.category}
+                  </span>
+                  {'similarity' in item && item.similarity !== undefined && (
+                    <span className="text-[10px] text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
+                      相關度 {Math.round(item.similarity * 100)}%
+                    </span>
+                  )}
+                </div>
+                <p className={`text-sm font-medium leading-relaxed ${expanded === item.id ? 'text-indigo-700' : 'text-slate-700 group-hover:text-slate-900'}`}>
+                  {item.question}
+                </p>
+              </div>
+            </button>
+
+            {/* 答案 */}
+            {expanded === item.id && (
+              <div className="px-5 pb-5 pt-1 bg-indigo-50/40 border-t border-indigo-100">
+                <div className="flex gap-2 mb-2">
+                  <div className="w-1 rounded-full bg-indigo-400 flex-shrink-0" />
+                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{item.answer}</p>
+                </div>
+              </div>
+            )}
           </div>
         ))}
-
-        {searching && (
-          <div className="flex justify-start">
-            <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-none px-4 py-3 shadow-sm">
-              <div className="flex gap-1 items-center">
-                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" />
-                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-.3s]" />
-                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-.5s]" />
-                <span className="ml-2 text-slate-400 text-xs italic">搜尋知識庫中...</span>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
-      <div className="p-4 bg-white border-t">
-        {isListening && (
-          <p className="text-xs font-bold text-indigo-600 animate-pulse text-center mb-3">
-            聆聽中... 說「送出」自動發送
-          </p>
-        )}
-        <div className="flex gap-2 items-center">
-          <button onClick={toggleMic} disabled={searching}
-            className={`p-3 rounded-full transition-all flex-shrink-0 ${
-              isListening ? 'bg-red-500 text-white ring-4 ring-red-100' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-            }`}>
-            <IconMic className={`w-5 h-5 ${isListening ? 'animate-pulse' : ''}`} />
-          </button>
-          <input
-            type="text" value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && !searching && handleSearch(input)}
-            placeholder={isListening ? '' : '輸入你的問題...'}
-            disabled={searching || isListening}
-            className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-          <button onClick={() => handleSearch(input)}
-            disabled={!input.trim() || searching || isListening}
-            className="bg-indigo-600 text-white p-3 rounded-full hover:bg-indigo-700 disabled:opacity-50 flex-shrink-0 shadow-lg shadow-indigo-100">
-            <IconSend className="w-5 h-5" />
-          </button>
-        </div>
+      {/* 底部提示 */}
+      <div className="px-5 py-2.5 border-t border-slate-100 bg-slate-50/60 flex-shrink-0">
+        <p className="text-xs text-slate-400 text-center">
+          {search
+            ? `搜尋到 ${displayItems.length} 個相關問答`
+            : `${activeCategory} · ${displayItems.length} 個問答 · 點擊展開解答`}
+        </p>
       </div>
     </div>
   );

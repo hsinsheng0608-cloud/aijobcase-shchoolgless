@@ -8,21 +8,22 @@
     "init-db": "node init-db.js"
   },
   "dependencies": {
-    "express": "^5.1.0",
-    "cors": "^2.8.6",
-    "helmet": "^8.1.0",
-    "express-rate-limit": "^8.3.1",
-    "body-parser": "^2.2.2",
-    "pg": "^8.18.0",
-    "dotenv": "^17.3.1",
-    "multer": "^2.1.0",
-    "bcryptjs": "^3.0.2",
-    "jsonwebtoken": "^9.0.2",
     "@google/genai": "^1.38.0",
-    "pdf-parse": "^2.4.5",
+    "adm-zip": "^0.5.16",
+    "bcryptjs": "^3.0.2",
+    "body-parser": "^2.2.2",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.3.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
     "mammoth": "^1.9.0",
-    "xlsx": "^0.18.5",
+    "multer": "^2.1.0",
     "p-limit": "^6.2.0",
-    "adm-zip": "^0.5.16"
+    "pdf-parse": "^2.4.5",
+    "pg": "^8.18.0",
+    "sharp": "^0.34.5",
+    "xlsx": "^0.18.5"
   }
 }

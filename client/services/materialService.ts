@@ -2,7 +2,7 @@
 import { getAuthHeaders } from './authService';
 import { Material } from '../types';
 
-const API_BASE = '/api';
+import { API_BASE } from '../apiBase';
 
 /**
  * 上傳教材

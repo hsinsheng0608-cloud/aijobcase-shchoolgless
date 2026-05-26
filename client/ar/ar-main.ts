@@ -12,6 +12,8 @@ import { VoiceInput } from './modules/voice-input';
 import { sendChatMessage, getUserInfo } from './modules/ar-chat';
 import { SessionRecorder, type OpticsSnapshot } from './modules/session-recorder';
 
+const API_ORIGIN = import.meta.env.VITE_API_URL || '';
+
 // DOM elements
 const loadingScreen = document.getElementById('loading-screen')!;
 const loadingStatus = document.getElementById('loading-status')!;
@@ -236,7 +238,7 @@ async function loadHistory() {
   if (!token) return;
   historyList.innerHTML = '<div class="text-center text-white/40 text-sm py-8">載入中...</div>';
   try {
-    const res = await fetch('/api/ar-practice/sessions', {
+    const res = await fetch(`${API_ORIGIN}/api/ar-practice/sessions`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const json = await res.json();
@@ -274,14 +276,31 @@ const guidancePanel = document.getElementById('guidance-panel')!;
 const chatPanel = document.getElementById('chat-panel')!;
 const fabGuidance = document.getElementById('mobile-fab-guidance');
 const fabChat = document.getElementById('mobile-fab-chat');
-fabGuidance?.addEventListener('click', () => {
+const mobileBackdrop = document.getElementById('mobile-panel-backdrop');
+
+function closeMobilePanels() {
+  guidancePanel.classList.remove('panel-open');
   chatPanel.classList.remove('panel-open');
-  guidancePanel.classList.toggle('panel-open');
+  mobileBackdrop?.classList.remove('active');
+}
+
+fabGuidance?.addEventListener('click', () => {
+  const willOpen = !guidancePanel.classList.contains('panel-open');
+  closeMobilePanels();
+  if (willOpen) {
+    guidancePanel.classList.add('panel-open');
+    mobileBackdrop?.classList.add('active');
+  }
 });
 fabChat?.addEventListener('click', () => {
-  guidancePanel.classList.remove('panel-open');
-  chatPanel.classList.toggle('panel-open');
+  const willOpen = !chatPanel.classList.contains('panel-open');
+  closeMobilePanels();
+  if (willOpen) {
+    chatPanel.classList.add('panel-open');
+    mobileBackdrop?.classList.add('active');
+  }
 });
+mobileBackdrop?.addEventListener('click', closeMobilePanels);
 
 // Mode toggle (contact lens / glasses)
 const modeContact = document.getElementById('mode-contact')!;
@@ -340,6 +359,18 @@ function buildLensButtons(items: { id: string; name: string; image_url: string; 
       });
       btn.classList.add('ring-2', 'ring-white');
       renderer.setLensImage(item.image_url);
+      // 罐頭訊息
+      const lensName = item.name || item.lens_color || '此款式';
+      addChatMessage(
+        `👁️ 已選擇【${lensName}】隱形眼鏡！\n` +
+        `📌 佩戴小提示：\n` +
+        `• 佩戴前請徹底洗手並擦乾\n` +
+        `• 每日佩戴建議不超過 8 小時\n` +
+        `• 取下後需用隱眼藥水清潔存放\n` +
+        `• 若感覺乾澀、刺痛請立即取下\n` +
+        `有任何疑問可以直接問我 😊`,
+        'ai'
+      );
     });
     container.appendChild(btn);
   });
@@ -349,7 +380,7 @@ function buildLensButtons(items: { id: string; name: string; image_url: string; 
 
 async function fetchLensCatalog() {
   try {
-    const res = await fetch('/api/glasses?item_type=lens');
+    const res = await fetch(`${API_ORIGIN}/api/glasses?item_type=lens`);
     if (!res.ok) return;
     const data = await res.json();
     if (data.success && data.data?.length) buildLensButtons(data.data);
@@ -368,11 +399,23 @@ function applyBuiltinStyle(style: string) {
 }
 
 // Glasses style selection
+const GLASSES_CANNED: Record<string, string> = {
+  black:       '🕶️ 已選擇【黑框眼鏡】！\n📌 配鏡小知識：\n• 黑色全框鏡架適合多種臉型，視覺上能修飾臉形\n• 正式場合與日常皆適用，為最百搭經典款\n• 建議定期清潔鼻墊與鏡腳，避免皮膚過敏\n有任何疑問可以直接問我 😊',
+  tortoise:    '🕶️ 已選擇【玳瑁框眼鏡】！\n📌 配鏡小知識：\n• 玳瑁紋色調溫暖，適合膚色偏暖的配戴者\n• 醋酸纖維材質輕盈耐用，不易引發皮膚過敏\n• 避免長時間置於高溫環境，以免鏡框變形\n有任何疑問可以直接問我 😊',
+  gold:        '🕶️ 已選擇【金屬框眼鏡】！\n📌 配鏡小知識：\n• 金屬框輕量耐用，無螺絲設計可減少鼻橋壓力\n• 適合長時間配戴，商務休閒兩相宜\n• 鈦合金材質對金屬過敏者較為友善\n有任何疑問可以直接問我 😊',
+  red:         '🕶️ 已選擇【紅框眼鏡】！\n📌 配鏡小知識：\n• 鮮豔色系鏡框能展現個人風格與自信\n• 建議搭配簡約服裝，以突顯鏡框為主角\n• 彩色鏡框對膚色較亮者視覺效果更佳\n有任何疑問可以直接問我 😊',
+  sunglasses:  '🕶️ 已選擇【墨鏡/飛行員款】！\n📌 配鏡小知識：\n• UV400 防護鏡片可阻隔 99% 以上紫外線\n• 戶外活動、開車時配戴保護眼睛免受強光傷害\n• 灰色/棕色鏡片對色彩失真最少，為戶外首選\n有任何疑問可以直接問我 😊',
+};
+
 document.querySelectorAll('.glasses-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.glasses-btn').forEach((b) => b.classList.remove('active'));
     btn.classList.add('active');
-    applyBuiltinStyle((btn as HTMLElement).dataset.glasses!);
+    const style = (btn as HTMLElement).dataset.glasses!;
+    applyBuiltinStyle(style);
+    // 罐頭訊息
+    const msg = GLASSES_CANNED[style] ?? `🕶️ 已選擇眼鏡款式！有任何配鏡問題可以直接問我 😊`;
+    addChatMessage(msg, 'ai');
   });
 });
 
@@ -768,7 +811,7 @@ async function loadGlassesCatalog() {
   if (!token) return;
 
   try {
-    const res = await fetch('/api/glasses?item_type=glasses', {
+    const res = await fetch(`${API_ORIGIN}/api/glasses?item_type=glasses`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     console.log('[glasses] API status:', res.status);

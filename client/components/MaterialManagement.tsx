@@ -11,6 +11,8 @@ import {
   IconTrash
 } from './Icons';
 import { uploadMaterial, getMaterials, pollMaterialStatus } from '../services/materialService';
+import { API_BASE } from '../apiBase';
+import { getAuthHeaders } from '../services/authService';
 
 const Modal: React.FC<{ title: string; onClose: () => void; children: React.ReactNode }> = ({ title, onClose, children }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -37,15 +39,53 @@ const MaterialManagement: React.FC<MaterialManagementProps> = ({ courseId }) => 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [courses, setCourses] = useState<{id: string; name: string}[]>([]);
+  const [internalCourseId, setInternalCourseId] = useState<string | null>(null);
+
+  const effectiveCourseId = courseId ?? internalCourseId;
 
   useEffect(() => {
-    if (courseId) {
-      getMaterials(courseId).then(setMaterials).catch(console.error);
+    if (effectiveCourseId) {
+      getMaterials(effectiveCourseId).then(setMaterials).catch(console.error);
+    }
+  }, [effectiveCourseId]);
+
+  useEffect(() => {
+    if (!courseId) {
+      fetch(`${API_BASE}/courses`, { headers: getAuthHeaders() })
+        .then(r => r.json())
+        .then(d => setCourses(d.data ?? d.courses ?? []))
+        .catch(() => {});
     }
   }, [courseId]);
 
-  if (!courseId) {
-    return <div className="text-center py-20 text-slate-400"><p>請先在「我的課程」中選擇一個課程</p></div>;
+  if (!effectiveCourseId) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">課程教材管理</h2>
+          <p className="text-sm text-slate-500 mt-1">上傳教材後系統將自動建立 AI 索引</p>
+        </div>
+        <div className="bg-white rounded-2xl border border-slate-200 p-6">
+          <p className="text-sm font-semibold text-slate-700 mb-3">選擇課程</p>
+          {courses.length === 0 ? (
+            <p className="text-sm text-slate-400">載入課程中...</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {courses.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => setInternalCourseId(c.id)}
+                  className="text-left px-4 py-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 transition-all"
+                >
+                  <p className="text-sm font-semibold text-slate-800">{c.name}</p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   }
 
   const processFile = (file: File) => {
@@ -72,11 +112,11 @@ const MaterialManagement: React.FC<MaterialManagementProps> = ({ courseId }) => 
     setIsProcessing(true);
 
     try {
-      const { materialId } = await uploadMaterial(courseId, selectedFile, title);
+      const { materialId } = await uploadMaterial(effectiveCourseId, selectedFile, title);
 
       // 加入 PROCESSING 狀態的教材
       setMaterials(prev => [{
-        id: materialId, course_id: courseId, title: title || selectedFile.name,
+        id: materialId, course_id: effectiveCourseId, title: title || selectedFile.name,
         type: selectedFile.name.split('.').pop()?.toUpperCase() as any || 'PDF',
         status: 'PROCESSING', created_at: new Date().toISOString(),
       }, ...prev]);

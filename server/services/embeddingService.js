@@ -1,6 +1,11 @@
 /**
  * 向量化服務 - 使用 Gemini text-embedding-004
  */
+// 本地開發時若有 VPN/Proxy 造成 TLS 憑證錯誤，略過驗證
+if (process.env.NODE_ENV !== 'production') {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+}
+
 const { GoogleGenAI } = require('@google/genai');
 const { geminiLimit } = require('./geminiLimiter');
 
