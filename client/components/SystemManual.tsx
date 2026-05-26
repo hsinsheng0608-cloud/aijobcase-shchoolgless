@@ -136,9 +136,19 @@ export default function SystemManual() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div>
-        <h2 className="text-2xl font-black text-slate-800">系統操作說明</h2>
-        <p className="text-sm text-slate-400 mt-1">EduMind AI 視光教育平台使用手冊</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h2 className="text-2xl font-black text-slate-800">系統操作說明</h2>
+          <p className="text-sm text-slate-400 mt-1">EduMind AI 視光教育平台使用手冊</p>
+        </div>
+        {/* 重看導覽 */}
+        <button
+          onClick={() => { localStorage.removeItem('edumind_onboarded'); window.location.reload(); }}
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl border border-indigo-200 text-sm font-medium transition-all"
+        >
+          <span>🎯</span>
+          重看新手導覽
+        </button>
       </div>
 
       {/* Tab bar */}

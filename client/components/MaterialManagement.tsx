@@ -54,36 +54,26 @@ const MaterialManagement: React.FC<MaterialManagementProps> = ({ courseId }) => 
     if (!courseId) {
       fetch(`${API_BASE}/courses`, { headers: getAuthHeaders() })
         .then(r => r.json())
-        .then(d => setCourses(d.data ?? d.courses ?? []))
+        .then(d => {
+          const list = d.data ?? d.courses ?? [];
+          setCourses(list);
+          // 自動選第一個課程，不需要手動選
+          if (list.length > 0 && !internalCourseId) {
+            setInternalCourseId(list[0].id);
+          }
+        })
         .catch(() => {});
     }
   }, [courseId]);
 
-  if (!effectiveCourseId) {
+  // 載入中
+  if (!courseId && courses.length === 0) {
     return (
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800">課程教材管理</h2>
-          <p className="text-sm text-slate-500 mt-1">上傳教材後系統將自動建立 AI 索引</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <p className="text-sm font-semibold text-slate-700 mb-3">選擇課程</p>
-          {courses.length === 0 ? (
-            <p className="text-sm text-slate-400">載入課程中...</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {courses.map(c => (
-                <button
-                  key={c.id}
-                  onClick={() => setInternalCourseId(c.id)}
-                  className="text-left px-4 py-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 transition-all"
-                >
-                  <p className="text-sm font-semibold text-slate-800">{c.name}</p>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+      <div className="flex items-center justify-center py-20">
+        <svg className="w-6 h-6 animate-spin text-indigo-400" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+        </svg>
       </div>
     );
   }
@@ -133,18 +123,38 @@ const MaterialManagement: React.FC<MaterialManagementProps> = ({ courseId }) => 
     }
   };
 
+  const currentCourseName = courses.find(c => c.id === effectiveCourseId)?.name ?? '';
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
+      <div className="flex justify-between items-center gap-3 flex-wrap">
+        <div className="min-w-0">
           <h2 className="text-2xl font-bold text-slate-800">課程教材管理</h2>
           <p className="text-sm text-slate-500">上傳教材後系統將自動建立 AI 索引</p>
         </div>
         <button onClick={() => { setSelectedFile(null); setTitle(''); setActiveModal('UPLOAD'); }}
-          className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-700 flex items-center gap-2 shadow-lg font-medium">
+          className="flex-shrink-0 bg-indigo-600 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-700 flex items-center gap-2 shadow-lg font-medium">
           <IconPlus className="w-5 h-5" /> 上傳新教材
         </button>
       </div>
+
+      {/* 課程切換（只在沒有外部 courseId 時顯示） */}
+      {!courseId && courses.length > 1 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-slate-500">課程：</span>
+          {courses.map(c => (
+            <button key={c.id}
+              onClick={() => setInternalCourseId(c.id)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                effectiveCourseId === c.id
+                  ? 'bg-indigo-600 text-white border-indigo-600'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-400 hover:text-indigo-600'
+              }`}>
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {materials.map((mat) => (

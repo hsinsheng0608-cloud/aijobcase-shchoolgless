@@ -75,7 +75,56 @@ const AIChatView: React.FC<AIChatViewProps> = ({ courseId, onBack }) => {
     ? searchResults
     : items.filter(i => activeCategory === '全部' || i.category === activeCategory);
 
+  const [expandedFull, setExpandedFull] = useState<Set<string>>(new Set());
+
   const toggle = (id: string) => setExpanded(prev => prev === id ? null : id);
+
+  const renderAnswer = (text: string, isExpanded: boolean) => {
+    const lines = text.split('\n').filter(l => l.trim());
+    const displayLines = isExpanded ? lines : lines.slice(0, 3);
+
+    return displayLines.map((line, i) => {
+      const trimmed = line.trim();
+      // Numbered item: "1. xxx" or "1）xxx"
+      const numMatch = trimmed.match(/^(\d+)[.）、]\s*(.+)/);
+      // Bullet item: "- xxx" or "• xxx" or "· xxx"
+      const bulletMatch = trimmed.match(/^[-•·]\s*(.+)/);
+      // Sub-item: "   - xxx" (indented)
+      const subMatch = line.match(/^ {2,}[-•·]\s*(.+)/);
+      // Header/title line (ends with ：or :)
+      const isHeader = trimmed.endsWith('：') || trimmed.endsWith(':');
+
+      if (numMatch) {
+        return (
+          <div key={i} className="flex gap-2 mt-1.5">
+            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold flex items-center justify-center mt-0.5">{numMatch[1]}</span>
+            <span className="text-sm text-slate-700 leading-relaxed">{numMatch[2]}</span>
+          </div>
+        );
+      }
+      if (subMatch) {
+        return (
+          <div key={i} className="flex gap-1.5 ml-7 mt-0.5">
+            <span className="text-indigo-300 mt-1.5 flex-shrink-0">▸</span>
+            <span className="text-xs text-slate-600 leading-relaxed">{subMatch[1]}</span>
+          </div>
+        );
+      }
+      if (bulletMatch) {
+        return (
+          <div key={i} className="flex gap-2 mt-1">
+            <span className="text-indigo-400 mt-1.5 flex-shrink-0 text-xs">●</span>
+            <span className="text-sm text-slate-700 leading-relaxed">{bulletMatch[1]}</span>
+          </div>
+        );
+      }
+      if (isHeader) {
+        return <p key={i} className="text-xs font-bold text-slate-500 uppercase tracking-wide mt-2 mb-0.5">{trimmed}</p>;
+      }
+      if (!trimmed) return null;
+      return <p key={i} className="text-sm text-slate-700 leading-relaxed mt-1">{trimmed}</p>;
+    });
+  };
 
   const categoryColors: Record<string, string> = {
     '視光產業現況': 'bg-blue-50 text-blue-700 border-blue-200',
@@ -224,11 +273,44 @@ const AIChatView: React.FC<AIChatViewProps> = ({ courseId, onBack }) => {
 
             {/* 答案 */}
             {expanded === item.id && (
-              <div className="px-5 pb-5 pt-1 bg-indigo-50/40 border-t border-indigo-100">
-                <div className="flex gap-2 mb-2">
-                  <div className="w-1 rounded-full bg-indigo-400 flex-shrink-0" />
-                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{item.answer}</p>
+              <div className="px-4 pb-4 pt-2 bg-indigo-50/40 border-t border-indigo-100">
+                {/* 重點摘要：取第一個有意義的非標題行 */}
+                {(() => {
+                  const firstKey = item.answer.split('\n')
+                    .map(l => l.trim())
+                    .filter(l => l && !l.endsWith('：') && !l.endsWith(':'))
+                    .find(l => {
+                      const clean = l.replace(/^(\d+[.）、]|[-•·])\s*/, '');
+                      return clean.length > 5;
+                    });
+                  if (!firstKey) return null;
+                  const clean = firstKey.replace(/^(\d+[.）、]|[-•·])\s*/, '');
+                  return (
+                    <div className="mb-3 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                      <span className="text-amber-500 text-sm flex-shrink-0 mt-0.5">💡</span>
+                      <p className="text-xs text-amber-800 leading-relaxed font-medium">{clean}</p>
+                    </div>
+                  );
+                })()}
+                <div className="border-l-2 border-indigo-300 pl-3 space-y-0.5">
+                  {renderAnswer(item.answer, expandedFull.has(item.id))}
                 </div>
+                {item.answer.split('\n').filter(l => l.trim()).length > 3 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setExpandedFull(prev => {
+                        const next = new Set(prev);
+                        if (next.has(item.id)) next.delete(item.id);
+                        else next.add(item.id);
+                        return next;
+                      });
+                    }}
+                    className="mt-2 text-xs text-indigo-500 hover:text-indigo-700 font-medium flex items-center gap-1"
+                  >
+                    {expandedFull.has(item.id) ? '收起 ▲' : `展開全文 ▼（共 ${item.answer.split('\n').filter(l=>l.trim()).length} 行）`}
+                  </button>
+                )}
               </div>
             )}
           </div>

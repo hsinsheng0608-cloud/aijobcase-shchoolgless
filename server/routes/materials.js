@@ -149,6 +149,30 @@ router.get('/:id/status', async (req, res) => {
 });
 
 /**
+ * PATCH /api/materials/:id/move — 移動教材到指定課程
+ */
+router.patch('/:id/move', requireRole('ADMIN', 'TEACHER'), async (req, res) => {
+  try {
+    const { toCourseId } = req.body;
+    if (!toCourseId) return res.status(400).json({ success: false, error: '請指定目標課程 toCourseId' });
+    const { rowCount, rows } = await pool.query(
+      'UPDATE materials SET course_id = $1 WHERE id = $2 RETURNING id, title, course_id',
+      [toCourseId, req.params.id]
+    );
+    if (rowCount === 0) return res.status(404).json({ success: false, error: '教材不存在' });
+    // 同步更新 document_chunks 的 metadata
+    await pool.query(
+      `UPDATE document_chunks SET metadata = jsonb_set(metadata, '{course_id}', to_jsonb($1::text))
+       WHERE material_id = $2`,
+      [toCourseId, req.params.id]
+    );
+    res.json({ success: true, data: rows[0] });
+  } catch (err) {
+    safeError(res, err, 'PATCH /api/materials/:id/move');
+  }
+});
+
+/**
  * DELETE /api/materials/:id
  */
 router.delete('/:id', requireRole('ADMIN', 'TEACHER'), async (req, res) => {
