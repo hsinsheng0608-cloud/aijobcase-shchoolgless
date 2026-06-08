@@ -257,7 +257,7 @@ async function loadHistory() {
     const grid = document.createElement('div');
     grid.className = 'grid grid-cols-2 gap-2';
     items.forEach((item: any) => {
-      const src = resolveUrl(item.image_url);
+      const src = `${API_ORIGIN}/api/my-glasses/${item.id}/image`;
       const cell = document.createElement('div');
       cell.className = 'relative group';
       const img = document.createElement('img');
@@ -1070,14 +1070,15 @@ async function loadMyCollection() {
     items.forEach((item) => {
       const cell = document.createElement('div');
       cell.className = 'relative group';
+      const imgUrl = `${API_ORIGIN}/api/my-glasses/${item.id}/image`;
       const img = document.createElement('img');
-      img.src = resolveUrl(item.image_url);
+      img.src = imgUrl;
       img.className = 'w-full h-20 object-contain bg-white/5 rounded-lg cursor-pointer border border-white/10 hover:border-amber-400';
       img.title = '點擊套用';
       img.addEventListener('click', () => {
         usingCatalogGlasses = true;
         renderer.setMode('glasses');
-        glasses3DScene.setCatalogTexture(resolveUrl(item.image_url));
+        glasses3DScene.setCatalogTexture(imgUrl);
         applyOpticsMode();
         myCollectionModal?.classList.add('hidden');
       });
