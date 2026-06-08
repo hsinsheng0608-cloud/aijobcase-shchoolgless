@@ -75,7 +75,7 @@ const App: React.FC = () => {
       case 'admin': return <AdminArchitectureDoc />;
       case 'admin-users': return <AdminUserManagement />;
       case 'usage': return <UsageView />;
-      case 'manual': return <SystemManual />;
+      case 'manual': return <SystemManual userRole={user.role} />;
       default: return <Dashboard role={user.role} />;
     }
   };
