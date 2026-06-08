@@ -830,9 +830,6 @@ const snapRetake        = document.getElementById('snap-retake');
 const snapConfirm        = document.getElementById('snap-confirm');
 let pendingRemoval: Promise<Blob> | null = null;
 
-btnMyGlasses?.addEventListener('click', () => myGlassesInput?.click());
-btnSnapGlasses?.addEventListener('click', () => myGlassesInput?.click());
-
 // 把檔案載入成 Image 元素（給人臉偵測用）
 function fileToImage(file: Blob): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -843,13 +840,8 @@ function fileToImage(file: Blob): Promise<HTMLImageElement> {
   });
 }
 
-// 選/拍好照片 → 智慧防呆（擋自拍臉）→ 預覽確認 → 去背在確認時背景偷跑
-myGlassesInput?.addEventListener('change', async () => {
-  const file = myGlassesInput.files?.[0];
-  myGlassesInput.value = '';
-  if (!file) return;
-
-  // 智慧防呆：偵測這張是不是「人臉照」
+// 共用：照片（拍的或選的）→ 智慧防呆 → 預覽確認 → 去背在確認時背景偷跑
+async function processGlassesPhoto(file: Blob) {
   myGlassesToast?.classList.remove('hidden');
   if (myGlassesToastText) myGlassesToastText.textContent = '檢查照片中…';
   let isFace = false;
@@ -857,18 +849,70 @@ myGlassesInput?.addEventListener('change', async () => {
   myGlassesToast?.classList.add('hidden');
   if (isFace) {
     addChatMessage(
-      '🙅 偵測到這是「人臉照」。請改拍「只有眼鏡」的照片（眼鏡放桌上、背景單純），' +
+      '🙅 偵測到這是「人臉照」。請改拍「只有眼鏡」的照片（眼鏡放畫面中央、背景單純），' +
       '這樣去背才會抓到眼鏡、而不是整張臉喔！',
       'ai',
     );
     return;
   }
-
-  // 通過防呆 → 預覽確認（去背在確認畫面時背景偷跑）
   if (snapPreviewImg) snapPreviewImg.src = URL.createObjectURL(file);
   snapPreviewModal?.classList.remove('hidden');
   pendingRemoval = removeBg(file);
   pendingRemoval.catch(() => {});
+}
+
+// 檔案選擇（相機開不了時的退路）
+myGlassesInput?.addEventListener('change', () => {
+  const file = myGlassesInput.files?.[0];
+  myGlassesInput.value = '';
+  if (file) processGlassesPhoto(file);
+});
+
+// 自訂相機拍照視窗（桌機/手機通用，不走檔案選擇器）
+const camModal   = document.getElementById('cam-modal');
+const camVideo   = document.getElementById('cam-video') as HTMLVideoElement | null;
+const camShutter = document.getElementById('cam-shutter');
+const camCancel  = document.getElementById('cam-cancel');
+const camFlip    = document.getElementById('cam-flip');
+let camStream: MediaStream | null = null;
+let camFacing: 'environment' | 'user' = 'environment';
+
+async function startCamStream() {
+  if (camStream) camStream.getTracks().forEach(t => t.stop());
+  camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: camFacing } });
+  if (camVideo) { camVideo.srcObject = camStream; await camVideo.play(); }
+}
+async function openCamera() {
+  try {
+    await startCamStream();
+    camModal?.classList.remove('hidden');
+  } catch (e) {
+    console.warn('[camera] 開啟失敗，退回選檔:', e);
+    myGlassesInput?.click(); // 退路：相機開不了就選檔
+  }
+}
+function closeCamera() {
+  camModal?.classList.add('hidden');
+  camStream?.getTracks().forEach(t => t.stop());
+  camStream = null;
+}
+
+btnMyGlasses?.addEventListener('click', openCamera);
+btnSnapGlasses?.addEventListener('click', openCamera);
+camCancel?.addEventListener('click', closeCamera);
+camFlip?.addEventListener('click', async () => {
+  camFacing = camFacing === 'environment' ? 'user' : 'environment';
+  try { await startCamStream(); } catch (e) { console.warn('[camera] 翻轉失敗:', e); }
+});
+camShutter?.addEventListener('click', () => {
+  if (!camVideo || !camVideo.videoWidth) return;
+  const canvas = document.createElement('canvas');
+  canvas.width = camVideo.videoWidth;
+  canvas.height = camVideo.videoHeight;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  ctx.drawImage(camVideo, 0, 0, canvas.width, canvas.height);
+  canvas.toBlob((blob) => { closeCamera(); if (blob) processGlassesPhoto(blob); }, 'image/png');
 });
 
 snapRetake?.addEventListener('click', () => {
@@ -960,6 +1004,50 @@ btnCleanMode?.addEventListener('click', () => {
   btnCleanMode.classList.toggle('text-black', cleanMode);
   btnCleanMode.classList.toggle('bg-white/10', !cleanMode);
   btnCleanMode.title = cleanMode ? '結束拍眼鏡模式（顯示款式列）' : '拍眼鏡模式（隱藏款式列，畫面乾淨）';
+});
+
+// ── 儲存試戴照：合成 鏡頭 + 鏡片 + 眼鏡 三層 → 下載 ──────────
+const btnSaveShot = document.getElementById('btn-save-shot');
+
+// 鏡頭以 object-cover + 鏡像 畫到輸出畫布（對齊使用者看到的）
+function drawVideoCover(ctx: CanvasRenderingContext2D, src: HTMLVideoElement, dw: number, dh: number) {
+  const sw = src.videoWidth || dw, sh = src.videoHeight || dh;
+  const scale = Math.max(dw / sw, dh / sh);
+  const cw = sw * scale, ch = sh * scale;
+  const dx = (dw - cw) / 2, dy = (dh - ch) / 2;
+  ctx.save();
+  ctx.translate(dw, 0); ctx.scale(-1, 1);
+  ctx.drawImage(src, dx, dy, cw, ch);
+  ctx.restore();
+}
+
+btnSaveShot?.addEventListener('click', () => {
+  const w = video.clientWidth || video.videoWidth;
+  const h = video.clientHeight || video.videoHeight;
+  if (!w || !h) { addChatMessage('⚠️ 畫面還沒準備好，請稍候再試。', 'ai'); return; }
+  const out = document.createElement('canvas');
+  out.width = w; out.height = h;
+  const ctx = out.getContext('2d');
+  if (!ctx) return;
+  // 1) 鏡頭（鏡像 + cover）
+  drawVideoCover(ctx, video, w, h);
+  // 2) 鏡片 canvas（鏡像，stretch）
+  ctx.save(); ctx.translate(w, 0); ctx.scale(-1, 1); ctx.drawImage(canvas, 0, 0, w, h); ctx.restore();
+  // 3) 眼鏡 WebGL canvas（不鏡像）
+  ctx.drawImage(glasses3DCanvas, 0, 0, w, h);
+  // 下載
+  out.toBlob((blob) => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `我的試戴.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    addChatMessage('📸 已儲存試戴照（已下載到你的裝置）！', 'ai');
+  }, 'image/png');
 });
 
 // 處理每個檔案選擇器

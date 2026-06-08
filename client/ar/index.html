@@ -66,6 +66,10 @@
                 <button id="btn-clean-mode" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition" title="拍眼鏡模式（隱藏款式列，畫面乾淨）">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                 </button>
+                <!-- 儲存試戴照：把目前 AR 畫面截圖下載 -->
+                <button id="btn-save-shot" class="w-8 h-8 flex items-center justify-center rounded-lg bg-pink-600/60 hover:bg-pink-500/80 transition" title="儲存試戴照（下載截圖）">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 12V4m0 8l-3-3m3 3l3-3"/></svg>
+                </button>
                 <!-- 去背處理中提示 -->
                 <div id="my-glasses-toast" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/60">
                     <div class="bg-black/80 border border-amber-500/40 rounded-2xl px-6 py-5 flex flex-col items-center gap-3">
@@ -422,6 +426,17 @@
                     <button id="snap-retake" class="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-sm transition">重拍</button>
                     <button id="snap-confirm" class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm transition">用這張</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- 自訂相機拍照視窗（桌機/手機通用，不走檔案選擇器） -->
+        <div id="cam-modal" class="hidden fixed inset-0 z-[70] bg-black flex flex-col items-center justify-center gap-4">
+            <video id="cam-video" autoplay playsinline muted class="max-w-full max-h-[72vh] object-contain rounded-xl"></video>
+            <p class="text-white/60 text-xs">把「眼鏡」放畫面中央、背景單純，按下快門 📸（請勿拍臉）</p>
+            <div class="flex items-center gap-8">
+                <button id="cam-cancel" class="px-4 py-2 rounded-full bg-white/15 hover:bg-white/25 text-white text-sm transition">取消</button>
+                <button id="cam-shutter" class="w-16 h-16 rounded-full bg-white border-4 border-amber-400 active:scale-90 transition" title="拍照"></button>
+                <button id="cam-flip" class="px-4 py-2 rounded-full bg-white/15 hover:bg-white/25 text-white text-sm transition">翻轉鏡頭</button>
             </div>
         </div>
 

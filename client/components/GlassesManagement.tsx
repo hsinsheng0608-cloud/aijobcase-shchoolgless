@@ -48,6 +48,7 @@ export default function GlassesManagement() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [editItem, setEditItem] = useState<GlassesItem | null>(null);
+  const [autoRemoveBg, setAutoRemoveBg] = useState(true);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
@@ -87,8 +88,24 @@ export default function GlassesManagement() {
     if (!form.name) return setError('請填入名稱');
 
     setUploading(true); setError(''); setSuccess('');
+
+    // 自動去背：把老師拍的眼鏡照去背成乾淨透明圖（瀏覽器本地、不耗 API）
+    let imageBlob: Blob = file;
+    if (autoRemoveBg) {
+      try {
+        setSuccess('正在自動去背…（首次需下載模型）');
+        const { removeBackground } = await import('@imgly/background-removal');
+        imageBlob = await removeBackground(file);
+        setSuccess('');
+      } catch (err) {
+        console.warn('[glasses] 去背失敗，改用原圖上傳:', err);
+        imageBlob = file;
+        setSuccess('');
+      }
+    }
+
     const fd = new FormData();
-    fd.append('image', file);
+    fd.append('image', imageBlob, autoRemoveBg ? 'glasses.png' : file.name);
     Object.entries(form).forEach(([k, v]) => {
       fd.append(k, Array.isArray(v) ? JSON.stringify(v) : String(v));
     });
@@ -229,6 +246,10 @@ export default function GlassesManagement() {
             <label className="block text-sm font-medium text-gray-700 mb-1">圖片 * (PNG/JPG，最大 5MB)</label>
             <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp"
               className="w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 file:font-medium hover:file:bg-blue-100" />
+            <label className="flex items-center gap-2 mt-2 text-sm text-gray-600 cursor-pointer">
+              <input type="checkbox" checked={autoRemoveBg} onChange={e => setAutoRemoveBg(e.target.checked)} className="rounded" />
+              上傳時自動去背（建議拍眼鏡放桌上、背景單純）
+            </label>
           </div>
 
           {error && <p className="text-red-600 text-sm">{error}</p>}

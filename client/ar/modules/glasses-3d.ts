@@ -53,7 +53,7 @@ export class Glasses3D {
 
   constructor(canvas: HTMLCanvasElement, video: HTMLVideoElement) {
     this.videoEl = video;
-    this.renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    this.renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, preserveDrawingBuffer: true });
     this.renderer.setClearColor(0x000000, 0);
 
     this.scene = new THREE.Scene();
