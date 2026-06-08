@@ -53,6 +53,42 @@
                 <button id="btn-upload-glasses" class="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-700/60 hover:bg-emerald-600/80 transition" title="匯入眼鏡素材">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                 </button>
+                <!-- 拍我的眼鏡：拍照 → 自動去背 → 立即套用 AR -->
+                <button id="btn-my-glasses" class="w-8 h-8 flex items-center justify-center rounded-lg bg-amber-600/70 hover:bg-amber-500/90 transition" title="拍我的眼鏡（自動去背）">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                </button>
+                <input type="file" id="my-glasses-input" accept="image/*" capture="environment" class="hidden">
+                <!-- 我的眼鏡收藏 -->
+                <button id="btn-my-collection" class="w-8 h-8 flex items-center justify-center rounded-lg bg-amber-700/50 hover:bg-amber-600/70 transition" title="我的眼鏡收藏">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+                </button>
+                <!-- 拍眼鏡模式：隱藏上方款式縮圖列，畫面乾淨 -->
+                <button id="btn-clean-mode" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition" title="拍眼鏡模式（隱藏款式列，畫面乾淨）">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                </button>
+                <!-- 去背處理中提示 -->
+                <div id="my-glasses-toast" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/60">
+                    <div class="bg-black/80 border border-amber-500/40 rounded-2xl px-6 py-5 flex flex-col items-center gap-3">
+                        <div class="w-8 h-8 border-3 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+                        <p id="my-glasses-toast-text" class="text-sm text-white/90">正在自動去背…</p>
+                        <p class="text-[10px] text-white/40">首次使用需下載去背模型，請稍候</p>
+                    </div>
+                </div>
+                <!-- 我的眼鏡收藏：管理彈窗 -->
+                <div id="my-collection-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
+                    <div class="bg-slate-900 border border-amber-500/30 rounded-2xl w-[420px] max-w-[92vw] max-h-[80vh] flex flex-col overflow-hidden">
+                        <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
+                            <h3 class="text-sm font-semibold text-white/90">我的眼鏡收藏</h3>
+                            <button id="my-collection-close" class="text-white/40 hover:text-white text-lg leading-none">✕</button>
+                        </div>
+                        <div id="my-collection-grid" class="p-3 grid grid-cols-3 gap-2 overflow-y-auto flex-1 content-start">
+                            <p class="col-span-3 text-center text-white/40 text-xs py-8">載入中…</p>
+                        </div>
+                        <div class="px-4 py-3 border-t border-white/10">
+                            <button id="my-collection-clear" class="w-full py-2.5 rounded-xl bg-red-600/80 hover:bg-red-500 text-white text-sm font-medium transition">🗑 全部清除</button>
+                        </div>
+                    </div>
+                </div>
                 <button id="btn-face-shape" class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600/60 hover:bg-indigo-600/80 transition" title="臉型推薦">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </button>
@@ -370,6 +406,25 @@
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
         </button>
 
+        <!-- 底部一鍵拍照：抓目前鏡頭畫面 → 自動去背 → 立即套用（Mac/手機通用） -->
+        <button id="btn-snap-glasses" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 px-5 py-3 rounded-full bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-bold text-sm shadow-xl shadow-black/40 flex items-center gap-2 transition">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            拍我的眼鏡（放桌上拍）
+        </button>
+
+        <!-- 拍照確認預覽：先給用戶確認是否要這張，要才去背 -->
+        <div id="snap-preview-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
+            <div class="bg-slate-900 border border-amber-500/30 rounded-2xl p-4 max-w-sm w-full flex flex-col items-center gap-3">
+                <p class="text-sm text-white/90 font-medium">要用這張照片嗎？</p>
+                <img id="snap-preview-img" alt="預覽" class="max-h-64 w-auto rounded-lg border border-white/10 object-contain">
+                <p class="text-[11px] text-amber-300/70 text-center">📷 請拍「只有眼鏡」的照片（平放桌上、背景單純）<br>⚠️ 不要自拍臉，否則會去背成整張臉</p>
+                <div class="flex gap-3 w-full">
+                    <button id="snap-retake" class="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-sm transition">重拍</button>
+                    <button id="snap-confirm" class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm transition">用這張</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Bottom Control Bar（練習計時/儲存已停用：視光數據改為戴上後自動顯示） -->
         <div id="control-bar" class="hidden absolute bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-black/70 to-transparent px-6 py-4 flex items-center justify-center gap-4" style="display:none!important">
             <button id="btn-start" class="px-5 py-2.5 bg-green-600 hover:bg-green-700 rounded-xl text-sm font-medium flex items-center gap-2 transition">
@@ -623,8 +678,8 @@
         </div>
         <div class="tour-auto-row">
             <label class="tour-auto-label">
-                <input type="checkbox" id="tour-auto-toggle" checked>
-                <span>下次自動顯示</span>
+                <input type="checkbox" id="tour-auto-toggle">
+                <span>下次進入時再自動顯示一次</span>
             </label>
         </div>
     </div>
@@ -768,8 +823,8 @@
 
         var autoToggle = document.getElementById('tour-auto-toggle');
 
-        /* Sync checkbox to current localStorage state */
-        autoToggle.checked = !localStorage.getItem('ar-tour-done');
+        /* 預設不勾選：看過一次就不再自動跳，要再看可按「操作導覽」鈕 */
+        autoToggle.checked = false;
 
         autoToggle.addEventListener('change', function () {
             if (this.checked) {
@@ -782,8 +837,8 @@
         function startTour() {
             tourStep = 0;
             tourActive = true;
-            /* Reflect current auto-start preference in checkbox */
-            autoToggle.checked = !localStorage.getItem('ar-tour-done');
+            /* 開啟導覽時，勾選框預設不勾（要再看才勾） */
+            autoToggle.checked = false;
             hlEl.style.display  = '';
             tipEl.style.display = '';
             showTourStep(0);

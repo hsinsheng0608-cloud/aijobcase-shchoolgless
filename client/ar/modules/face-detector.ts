@@ -222,3 +222,23 @@ export async function initFaceDetector(
 
   detect();
 }
+
+// 智慧防呆：偵測一張靜態圖片裡是否有人臉（用來擋「自拍臉」誤當眼鏡上傳）
+let imageLandmarker: FaceLandmarker | null = null;
+export async function detectFaceInImage(img: HTMLImageElement): Promise<boolean> {
+  try {
+    if (!imageLandmarker) {
+      const vision = await FilesetResolver.forVisionTasks(WASM_URL);
+      imageLandmarker = await FaceLandmarker.createFromOptions(vision, {
+        baseOptions: { modelAssetPath: MODEL_URL, delegate: 'GPU' },
+        runningMode: 'IMAGE',
+        numFaces: 1,
+      });
+    }
+    const res = imageLandmarker.detect(img);
+    return !!(res.faceLandmarks && res.faceLandmarks.length > 0);
+  } catch (e) {
+    console.warn('[detectFaceInImage] 偵測失敗，跳過防呆:', e);
+    return false; // 偵測失敗就放行，避免誤擋
+  }
+}

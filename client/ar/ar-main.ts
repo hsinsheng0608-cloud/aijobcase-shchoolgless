@@ -3,9 +3,10 @@
  * Orchestrates face detection, lens rendering, guidance, chat, and session recording
  */
 
-import { initFaceDetector, type FaceResult } from './modules/face-detector';
+import { initFaceDetector, detectFaceInImage, type FaceResult } from './modules/face-detector';
 import { LensRenderer, type LensColor } from './modules/lens-renderer';
 import { uploadGlassesImage, registerGlassesUrl, type GlassesAngle } from './modules/glasses-assets';
+import { removeBackground } from '@imgly/background-removal';
 import { Glasses3D } from './modules/glasses-3d';
 import { GuidanceController } from './modules/guidance-controller';
 import { VoiceInput } from './modules/voice-input';
@@ -376,7 +377,11 @@ function buildLensButtons(items: { id: string; name: string; image_url: string; 
         `• 取下後需用隱眼藥水清潔存放\n` +
         `• 若感覺乾澀、刺痛請立即取下\n` +
         `有任何疑問可以直接問我 😊`,
-        'ai'
+        'ai',
+        {
+          label: '💬 詳細問 AI（這款適不適合我？）',
+          prompt: '請針對我目前選的這款隱形眼鏡，結合我的虹膜直徑(HVID)與用眼習慣，給我配戴適配與保養的個人化建議。',
+        }
       );
     });
     container.appendChild(btn);
@@ -420,17 +425,36 @@ document.querySelectorAll('.glasses-btn').forEach((btn) => {
     btn.classList.add('active');
     const style = (btn as HTMLElement).dataset.glasses!;
     applyBuiltinStyle(style);
-    // 罐頭訊息
+    // 罐頭訊息 + 可選「詳細問 AI」（混合模式）
     const msg = GLASSES_CANNED[style] ?? `🕶️ 已選擇眼鏡款式！有任何配鏡問題可以直接問我 😊`;
-    addChatMessage(msg, 'ai');
+    addChatMessage(msg, 'ai', {
+      label: '💬 詳細問 AI（依我的臉型／瞳距給個人化建議）',
+      prompt: '請結合我目前選的這款眼鏡、我的臉型與即時估算的瞳距，給我個人化的配戴與挑選建議。',
+    });
   });
 });
 
 // Chat
-function addChatMessage(text: string, role: 'user' | 'ai') {
+function addChatMessage(
+  text: string,
+  role: 'user' | 'ai',
+  action?: { label: string; prompt: string },
+) {
   const div = document.createElement('div');
   div.className = `chat-msg ${role}`;
   div.textContent = text;
+  // 混合模式：罐頭訊息下方附「詳細問 AI」按鈕，點了才即時生成個人化回答
+  if (action) {
+    const btn = document.createElement('button');
+    btn.textContent = action.label;
+    btn.className = 'mt-2 inline-block text-xs font-medium text-indigo-300 hover:text-indigo-100 underline decoration-dotted';
+    btn.addEventListener('click', () => {
+      btn.disabled = true;
+      btn.style.opacity = '0.4';
+      handleSendMessage(action.prompt);
+    });
+    div.appendChild(btn);
+  }
   chatMessages.appendChild(div);
   chatMessages.scrollTop = chatMessages.scrollHeight;
   return div;
@@ -751,6 +775,192 @@ const uploadBackdrop    = document.getElementById('upload-glasses-backdrop')!;
 btnUploadGlasses?.addEventListener('click', () => uploadModal.classList.remove('hidden'));
 uploadClose?.addEventListener('click',      () => uploadModal.classList.add('hidden'));
 uploadBackdrop?.addEventListener('click',   () => uploadModal.classList.add('hidden'));
+
+// 📷 拍我的眼鏡：拍照 → 自動去背 → 立即套用到 AR
+const btnMyGlasses   = document.getElementById('btn-my-glasses');
+const myGlassesInput = document.getElementById('my-glasses-input') as HTMLInputElement | null;
+const myGlassesToast = document.getElementById('my-glasses-toast');
+const myGlassesToastText = document.getElementById('my-glasses-toast-text');
+
+// 去背（首次會下載模型，之後快取）
+function removeBg(source: Blob): Promise<Blob> {
+  return removeBackground(source);
+}
+
+// 私人眼鏡 API 用的 auth header
+function myGlassesAuth(): Record<string, string> {
+  const t = localStorage.getItem('edumind_token');
+  return t ? { Authorization: `Bearer ${t}` } : {};
+}
+
+// 上傳去背後的私人眼鏡到伺服器（綁定登入身份）
+async function uploadMyGlasses(blob: Blob) {
+  try {
+    const fd = new FormData();
+    fd.append('image', blob, 'my-glasses.png');
+    await fetch(`${API_ORIGIN}/api/my-glasses/upload`, { method: 'POST', headers: myGlassesAuth(), body: fd });
+  } catch (e) { console.warn('[my-glasses] 上傳伺服器失敗（仍可本機使用）:', e); }
+}
+
+// 把去背後的圖套用為 AR 正面眼鏡貼圖
+function applyRemovedGlasses(blob: Blob, fromSnap: boolean) {
+  const url = URL.createObjectURL(blob);
+  usingCatalogGlasses = true;
+  renderer.setMode('glasses');
+  glasses3DScene.setCatalogTexture(url);
+  applyOpticsMode();
+  uploadMyGlasses(blob); // 存到「我的眼鏡」（伺服器，永久私人）
+  addChatMessage(
+    (fromSnap ? '📸 已套用您拍的眼鏡（去背完成）！' : '📷 已套用您的眼鏡（去背完成）！') +
+      '可用滑桿調整大小，或對著鏡頭看效果。',
+    'ai',
+    {
+      label: '💬 詳細問 AI（這副框適合我嗎？）',
+      prompt: '我剛套用了一副自己的眼鏡，請結合我的臉型與瞳距，評估這類鏡框是否適合我、並給挑選建議。',
+    },
+  );
+}
+
+// 兩個拍照入口都改成「拍/選『眼鏡這個物件』的照片」（手機用後鏡頭、桌機選檔）
+// 重要：不抓自拍鏡頭畫面，否則去背會把整張臉當主體 → 變成臉貼臉
+const btnSnapGlasses    = document.getElementById('btn-snap-glasses');
+const snapPreviewModal  = document.getElementById('snap-preview-modal');
+const snapPreviewImg    = document.getElementById('snap-preview-img') as HTMLImageElement | null;
+const snapRetake        = document.getElementById('snap-retake');
+const snapConfirm        = document.getElementById('snap-confirm');
+let pendingRemoval: Promise<Blob> | null = null;
+
+btnMyGlasses?.addEventListener('click', () => myGlassesInput?.click());
+btnSnapGlasses?.addEventListener('click', () => myGlassesInput?.click());
+
+// 把檔案載入成 Image 元素（給人臉偵測用）
+function fileToImage(file: Blob): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+// 選/拍好照片 → 智慧防呆（擋自拍臉）→ 預覽確認 → 去背在確認時背景偷跑
+myGlassesInput?.addEventListener('change', async () => {
+  const file = myGlassesInput.files?.[0];
+  myGlassesInput.value = '';
+  if (!file) return;
+
+  // 智慧防呆：偵測這張是不是「人臉照」
+  myGlassesToast?.classList.remove('hidden');
+  if (myGlassesToastText) myGlassesToastText.textContent = '檢查照片中…';
+  let isFace = false;
+  try { isFace = await detectFaceInImage(await fileToImage(file)); } catch { /* 放行 */ }
+  myGlassesToast?.classList.add('hidden');
+  if (isFace) {
+    addChatMessage(
+      '🙅 偵測到這是「人臉照」。請改拍「只有眼鏡」的照片（眼鏡放桌上、背景單純），' +
+      '這樣去背才會抓到眼鏡、而不是整張臉喔！',
+      'ai',
+    );
+    return;
+  }
+
+  // 通過防呆 → 預覽確認（去背在確認畫面時背景偷跑）
+  if (snapPreviewImg) snapPreviewImg.src = URL.createObjectURL(file);
+  snapPreviewModal?.classList.remove('hidden');
+  pendingRemoval = removeBg(file);
+  pendingRemoval.catch(() => {});
+});
+
+snapRetake?.addEventListener('click', () => {
+  snapPreviewModal?.classList.add('hidden');
+  pendingRemoval = null; // 背景去背繼續跑沒關係，模型會被快取，下次更快
+});
+
+snapConfirm?.addEventListener('click', async () => {
+  snapPreviewModal?.classList.add('hidden');
+  if (!pendingRemoval) return;
+  const job = pendingRemoval;
+  pendingRemoval = null;
+  if (myGlassesToastText) myGlassesToastText.textContent = '正在自動去背…';
+  myGlassesToast?.classList.remove('hidden');
+  try { applyRemovedGlasses(await job, true); }
+  catch (err) { addChatMessage('⚠️ 去背失敗了，請讓眼鏡正面、背景單純一點再試一次。', 'ai'); console.warn(err); }
+  finally { myGlassesToast?.classList.add('hidden'); }
+});
+
+// ── 我的眼鏡收藏（伺服器，私人）─────────────────────────
+const btnMyCollection   = document.getElementById('btn-my-collection');
+const myCollectionModal = document.getElementById('my-collection-modal');
+const myCollectionClose = document.getElementById('my-collection-close');
+const myCollectionGrid  = document.getElementById('my-collection-grid');
+const myCollectionClear = document.getElementById('my-collection-clear');
+
+interface MyGlassesItem { id: string; image_url: string; label?: string }
+
+async function loadMyCollection() {
+  if (!myCollectionGrid) return;
+  myCollectionGrid.innerHTML = '<p class="col-span-3 text-center text-white/40 text-xs py-8">載入中…</p>';
+  try {
+    const res = await fetch(`${API_ORIGIN}/api/my-glasses`, { headers: myGlassesAuth() });
+    const data = await res.json();
+    const items: MyGlassesItem[] = data.data ?? [];
+    if (items.length === 0) {
+      myCollectionGrid.innerHTML = '<p class="col-span-3 text-center text-white/40 text-xs py-8">還沒有收藏，拍一張眼鏡吧 📸</p>';
+      return;
+    }
+    myCollectionGrid.innerHTML = '';
+    items.forEach((item) => {
+      const cell = document.createElement('div');
+      cell.className = 'relative group';
+      const img = document.createElement('img');
+      img.src = resolveUrl(item.image_url);
+      img.className = 'w-full h-20 object-contain bg-white/5 rounded-lg cursor-pointer border border-white/10 hover:border-amber-400';
+      img.title = '點擊套用';
+      img.addEventListener('click', () => {
+        usingCatalogGlasses = true;
+        renderer.setMode('glasses');
+        glasses3DScene.setCatalogTexture(resolveUrl(item.image_url));
+        applyOpticsMode();
+        myCollectionModal?.classList.add('hidden');
+      });
+      const del = document.createElement('button');
+      del.textContent = '✕';
+      del.className = 'absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-white/80 text-[10px] hidden group-hover:flex items-center justify-center hover:bg-red-500';
+      del.title = '刪除這張';
+      del.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await fetch(`${API_ORIGIN}/api/my-glasses/${item.id}`, { method: 'DELETE', headers: myGlassesAuth() });
+        loadMyCollection();
+      });
+      cell.append(img, del);
+      myCollectionGrid.appendChild(cell);
+    });
+  } catch (e) {
+    myCollectionGrid.innerHTML = '<p class="col-span-3 text-center text-red-400/70 text-xs py-8">載入失敗</p>';
+    console.warn('[my-collection] 載入失敗:', e);
+  }
+}
+
+btnMyCollection?.addEventListener('click', () => { myCollectionModal?.classList.remove('hidden'); loadMyCollection(); });
+myCollectionClose?.addEventListener('click', () => myCollectionModal?.classList.add('hidden'));
+myCollectionClear?.addEventListener('click', async () => {
+  if (!confirm('確定要清除「我的眼鏡」全部照片嗎？此動作無法復原。')) return;
+  await fetch(`${API_ORIGIN}/api/my-glasses`, { method: 'DELETE', headers: myGlassesAuth() });
+  loadMyCollection();
+});
+
+// ── 拍眼鏡模式：隱藏上方款式縮圖列，讓畫面乾淨 ──────────
+const btnCleanMode = document.getElementById('btn-clean-mode');
+const modeSelector = document.getElementById('mode-selector');
+let cleanMode = false;
+btnCleanMode?.addEventListener('click', () => {
+  cleanMode = !cleanMode;
+  if (modeSelector) modeSelector.style.display = cleanMode ? 'none' : '';
+  btnCleanMode.classList.toggle('bg-amber-500', cleanMode);
+  btnCleanMode.classList.toggle('text-black', cleanMode);
+  btnCleanMode.classList.toggle('bg-white/10', !cleanMode);
+  btnCleanMode.title = cleanMode ? '結束拍眼鏡模式（顯示款式列）' : '拍眼鏡模式（隱藏款式列，畫面乾淨）';
+});
 
 // 處理每個檔案選擇器
 document.querySelectorAll<HTMLInputElement>('.glasses-file-input').forEach((input) => {
