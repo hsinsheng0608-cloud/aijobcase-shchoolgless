@@ -139,17 +139,21 @@ export class Glasses3D {
    * - position.y 讓鏡框 hinge (~37.5% from top) 對齊 arm attachY，消除斷層
    */
   setCatalogTexture(imageUrl: string) {
-    const tex = new THREE.TextureLoader().load(imageUrl);
+    const tex = new THREE.TextureLoader().load(imageUrl, (t) => {
+      // 依「實際圖片長寬比」設定 plane 高度，避免眼鏡被拉長/壓扁
+      const iw = (t.image && t.image.width) || 1;
+      const ih = (t.image && t.image.height) || 1;
+      this.frontMesh.scale.y = (FRONT.imgW / FRONT.imgH) * (ih / iw);
+    });
     tex.colorSpace = THREE.SRGBColorSpace;
     if (this.frontMat.map && this.frontMat.map !== this.defaultTex) {
       this.frontMat.map.dispose();
     }
     this.frontMat.map = tex;
     this.frontMat.needsUpdate = true;
-    this.frontMesh.scale.y    = FRONT.imgW / FRONT.imgH;  // 2.030 → 1:1 PNG 不變形
+    this.frontMesh.scale.y    = FRONT.imgW / FRONT.imgH;  // 暫定，onLoad 後依實際比例修正
     this.frontMesh.position.y = 0;
     this.frontMesh.visible    = true;
-    // catalog PNG hinge 約在圖片垂直中央（~50%），比 built-in 低很多 → 鏡腳需下移對齊
     this.armsGroup.position.y = -0.10;
   }
 
