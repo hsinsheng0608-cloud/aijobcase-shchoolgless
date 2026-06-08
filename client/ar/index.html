@@ -50,14 +50,11 @@
                 <button id="btn-optics" class="w-8 h-8 flex items-center justify-center rounded-lg bg-cyan-700/60 hover:bg-cyan-600/80 transition" title="視光數據">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                 </button>
-                <button id="btn-upload-glasses" class="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-700/60 hover:bg-emerald-600/80 transition" title="匯入眼鏡素材">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                </button>
                 <!-- 拍我的眼鏡：拍照 → 自動去背 → 立即套用 AR -->
-                <button id="btn-my-glasses" class="w-8 h-8 flex items-center justify-center rounded-lg bg-amber-600/70 hover:bg-amber-500/90 transition" title="拍我的眼鏡（自動去背）">
+                <button id="btn-my-glasses" class="w-8 h-8 flex items-center justify-center rounded-lg bg-amber-600/70 hover:bg-amber-500/90 transition" title="試戴我的眼鏡">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                 </button>
-                <input type="file" id="my-glasses-input" accept="image/*" capture="environment" class="hidden">
+                <input type="file" id="my-glasses-input" accept="image/*" class="hidden">
                 <!-- 我的眼鏡收藏 -->
                 <button id="btn-my-collection" class="w-8 h-8 flex items-center justify-center rounded-lg bg-amber-700/50 hover:bg-amber-600/70 transition" title="我的眼鏡收藏">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
@@ -74,8 +71,8 @@
                 <div id="my-glasses-toast" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/60">
                     <div class="bg-black/80 border border-amber-500/40 rounded-2xl px-6 py-5 flex flex-col items-center gap-3">
                         <div class="w-8 h-8 border-3 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
-                        <p id="my-glasses-toast-text" class="text-sm text-white/90">正在自動去背…</p>
-                        <p class="text-[10px] text-white/40">首次使用需下載去背模型，請稍候</p>
+                        <p id="my-glasses-toast-text" class="text-sm text-white/90">套用您的眼鏡中…</p>
+                        <p class="text-[10px] text-white/40">首次使用需稍候幾秒，請耐心等候</p>
                     </div>
                 </div>
                 <!-- 我的眼鏡收藏：管理彈窗 -->
@@ -96,7 +93,7 @@
                 <button id="btn-face-shape" class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600/60 hover:bg-indigo-600/80 transition" title="臉型推薦">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </button>
-                <button id="btn-history" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition" title="練習紀錄">
+                <button id="btn-history" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition" title="我的試戴照">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </button>
                 <button id="btn-fullscreen" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition" title="全螢幕">
@@ -421,7 +418,7 @@
             <div class="bg-slate-900 border border-amber-500/30 rounded-2xl p-4 max-w-sm w-full flex flex-col items-center gap-3">
                 <p class="text-sm text-white/90 font-medium">要用這張照片嗎？</p>
                 <img id="snap-preview-img" alt="預覽" class="max-h-64 w-auto rounded-lg border border-white/10 object-contain">
-                <p class="text-[11px] text-amber-300/70 text-center">📷 請拍「只有眼鏡」的照片（平放桌上、背景單純）<br>⚠️ 不要自拍臉，否則會去背成整張臉</p>
+                <p class="text-[11px] text-amber-300/70 text-center">📷 請拍「只有眼鏡」的照片（平放桌上、背景單純）<br>⚠️ 不要自拍臉，否則會把整張臉套上去</p>
                 <div class="flex gap-3 w-full">
                     <button id="snap-retake" class="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-sm transition">重拍</button>
                     <button id="snap-confirm" class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm transition">用這張</button>
@@ -438,6 +435,10 @@
                 <button id="cam-shutter" class="w-16 h-16 rounded-full bg-white border-4 border-amber-400 active:scale-90 transition" title="拍照"></button>
                 <button id="cam-flip" class="px-4 py-2 rounded-full bg-white/15 hover:bg-white/25 text-white text-sm transition">翻轉鏡頭</button>
             </div>
+            <button id="cam-upload" class="mt-1 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white/80 text-sm transition flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                改用上傳圖片
+            </button>
         </div>
 
         <!-- Bottom Control Bar（練習計時/儲存已停用：視光數據改為戴上後自動顯示） -->
@@ -471,7 +472,7 @@
             <div class="flex items-center justify-between p-4 border-b border-slate-700">
                 <h3 class="text-sm font-semibold flex items-center gap-2">
                     <svg class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    我的練習紀錄
+                    我的試戴照
                 </h3>
                 <button id="history-close" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 transition text-white/60 hover:text-white">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -484,153 +485,6 @@
     </div>
 
     <!-- 眼鏡素材上傳 Modal -->
-    <div id="upload-glasses-modal" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" id="upload-glasses-backdrop"></div>
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-900 rounded-2xl w-[520px] max-w-[95vw] max-h-[85vh] overflow-hidden border border-slate-700">
-            <div class="flex items-center justify-between p-4 border-b border-slate-700">
-                <h3 class="text-sm font-semibold flex items-center gap-2">
-                    <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                    匯入真實眼鏡素材（3 角度）
-                </h3>
-                <button id="upload-glasses-close" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 transition text-white/60 hover:text-white">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
-            </div>
-            <div class="overflow-y-auto max-h-[70vh] p-4 space-y-5">
-                <p class="text-[11px] text-white/40">每款眼鏡上傳三個角度的去背 PNG，轉頭時自動切換。建議圖片比例：正面 3:1，側面 2:1。</p>
-
-                <!-- 各款眼鏡 -->
-                <div class="space-y-4" id="glasses-upload-list">
-
-                    <!-- 黑框 -->
-                    <div class="bg-white/5 rounded-xl p-3">
-                        <div class="text-xs font-medium text-white mb-2">⬛ 黑框</div>
-                        <div class="grid grid-cols-3 gap-2">
-                            <label class="glasses-upload-slot border border-white/20 rounded-lg p-2 cursor-pointer hover:border-white/40 transition flex flex-col items-center gap-1.5">
-                                <img id="preview-black-sideLeft" class="hidden h-8 object-contain mb-1" />
-                                <svg class="w-5 h-5 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                                <span class="text-[10px] text-white/40">左側面</span>
-                                <input type="file" accept="image/*" class="hidden glasses-file-input" data-style="black" data-angle="sideLeft">
-                            </label>
-                            <label class="glasses-upload-slot border border-white/20 rounded-lg p-2 cursor-pointer hover:border-white/40 transition flex flex-col items-center gap-1.5">
-                                <img id="preview-black-front" class="hidden h-8 object-contain mb-1" />
-                                <svg class="w-5 h-5 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                                <span class="text-[10px] text-white/40">正面</span>
-                                <input type="file" accept="image/*" class="hidden glasses-file-input" data-style="black" data-angle="front">
-                            </label>
-                            <label class="glasses-upload-slot border border-white/20 rounded-lg p-2 cursor-pointer hover:border-white/40 transition flex flex-col items-center gap-1.5">
-                                <img id="preview-black-sideRight" class="hidden h-8 object-contain mb-1" />
-                                <svg class="w-5 h-5 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                                <span class="text-[10px] text-white/40">右側面</span>
-                                <input type="file" accept="image/*" class="hidden glasses-file-input" data-style="black" data-angle="sideRight">
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- 玳瑁 -->
-                    <div class="bg-white/5 rounded-xl p-3">
-                        <div class="text-xs font-medium text-white mb-2">🟫 玳瑁</div>
-                        <div class="grid grid-cols-3 gap-2">
-                            <label class="glasses-upload-slot border border-white/20 rounded-lg p-2 cursor-pointer hover:border-white/40 transition flex flex-col items-center gap-1.5">
-                                <img id="preview-tortoise-sideLeft" class="hidden h-8 object-contain mb-1" />
-                                <svg class="w-5 h-5 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                                <span class="text-[10px] text-white/40">左側面</span>
-                                <input type="file" accept="image/*" class="hidden glasses-file-input" data-style="tortoise" data-angle="sideLeft">
-                            </label>
-                            <label class="glasses-upload-slot border border-white/20 rounded-lg p-2 cursor-pointer hover:border-white/40 transition flex flex-col items-center gap-1.5">
-                                <img id="preview-tortoise-front" class="hidden h-8 object-contain mb-1" />
-                                <svg class="w-5 h-5 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                                <span class="text-[10px] text-white/40">正面</span>
-                                <input type="file" accept="image/*" class="hidden glasses-file-input" data-style="tortoise" data-angle="front">
-                            </label>
-                            <label class="glasses-upload-slot border border-white/20 rounded-lg p-2 cursor-pointer hover:border-white/40 transition flex flex-col items-center gap-1.5">
-                                <img id="preview-tortoise-sideRight" class="hidden h-8 object-contain mb-1" />
-                                <svg class="w-5 h-5 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                                <span class="text-[10px] text-white/40">右側面</span>
-                                <input type="file" accept="image/*" class="hidden glasses-file-input" data-style="tortoise" data-angle="sideRight">
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- 金屬 -->
-                    <div class="bg-white/5 rounded-xl p-3">
-                        <div class="text-xs font-medium text-white mb-2">🟡 金屬</div>
-                        <div class="grid grid-cols-3 gap-2">
-                            <label class="glasses-upload-slot border border-white/20 rounded-lg p-2 cursor-pointer hover:border-white/40 transition flex flex-col items-center gap-1.5">
-                                <img id="preview-gold-sideLeft" class="hidden h-8 object-contain mb-1" />
-                                <svg class="w-5 h-5 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                                <span class="text-[10px] text-white/40">左側面</span>
-                                <input type="file" accept="image/*" class="hidden glasses-file-input" data-style="gold" data-angle="sideLeft">
-                            </label>
-                            <label class="glasses-upload-slot border border-white/20 rounded-lg p-2 cursor-pointer hover:border-white/40 transition flex flex-col items-center gap-1.5">
-                                <img id="preview-gold-front" class="hidden h-8 object-contain mb-1" />
-                                <svg class="w-5 h-5 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                                <span class="text-[10px] text-white/40">正面</span>
-                                <input type="file" accept="image/*" class="hidden glasses-file-input" data-style="gold" data-angle="front">
-                            </label>
-                            <label class="glasses-upload-slot border border-white/20 rounded-lg p-2 cursor-pointer hover:border-white/40 transition flex flex-col items-center gap-1.5">
-                                <img id="preview-gold-sideRight" class="hidden h-8 object-contain mb-1" />
-                                <svg class="w-5 h-5 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                                <span class="text-[10px] text-white/40">右側面</span>
-                                <input type="file" accept="image/*" class="hidden glasses-file-input" data-style="gold" data-angle="sideRight">
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- 紅框 -->
-                    <div class="bg-white/5 rounded-xl p-3">
-                        <div class="text-xs font-medium text-white mb-2">🔴 紅框</div>
-                        <div class="grid grid-cols-3 gap-2">
-                            <label class="glasses-upload-slot border border-white/20 rounded-lg p-2 cursor-pointer hover:border-white/40 transition flex flex-col items-center gap-1.5">
-                                <img id="preview-red-sideLeft" class="hidden h-8 object-contain mb-1" />
-                                <svg class="w-5 h-5 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                                <span class="text-[10px] text-white/40">左側面</span>
-                                <input type="file" accept="image/*" class="hidden glasses-file-input" data-style="red" data-angle="sideLeft">
-                            </label>
-                            <label class="glasses-upload-slot border border-white/20 rounded-lg p-2 cursor-pointer hover:border-white/40 transition flex flex-col items-center gap-1.5">
-                                <img id="preview-red-front" class="hidden h-8 object-contain mb-1" />
-                                <svg class="w-5 h-5 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                                <span class="text-[10px] text-white/40">正面</span>
-                                <input type="file" accept="image/*" class="hidden glasses-file-input" data-style="red" data-angle="front">
-                            </label>
-                            <label class="glasses-upload-slot border border-white/20 rounded-lg p-2 cursor-pointer hover:border-white/40 transition flex flex-col items-center gap-1.5">
-                                <img id="preview-red-sideRight" class="hidden h-8 object-contain mb-1" />
-                                <svg class="w-5 h-5 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                                <span class="text-[10px] text-white/40">右側面</span>
-                                <input type="file" accept="image/*" class="hidden glasses-file-input" data-style="red" data-angle="sideRight">
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- 墨鏡 -->
-                    <div class="bg-white/5 rounded-xl p-3">
-                        <div class="text-xs font-medium text-white mb-2">🕶 墨鏡/飛行員</div>
-                        <div class="grid grid-cols-3 gap-2">
-                            <label class="glasses-upload-slot border border-white/20 rounded-lg p-2 cursor-pointer hover:border-white/40 transition flex flex-col items-center gap-1.5">
-                                <img id="preview-sunglasses-sideLeft" class="hidden h-8 object-contain mb-1" />
-                                <svg class="w-5 h-5 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                                <span class="text-[10px] text-white/40">左側面</span>
-                                <input type="file" accept="image/*" class="hidden glasses-file-input" data-style="sunglasses" data-angle="sideLeft">
-                            </label>
-                            <label class="glasses-upload-slot border border-white/20 rounded-lg p-2 cursor-pointer hover:border-white/40 transition flex flex-col items-center gap-1.5">
-                                <img id="preview-sunglasses-front" class="hidden h-8 object-contain mb-1" />
-                                <svg class="w-5 h-5 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                                <span class="text-[10px] text-white/40">正面</span>
-                                <input type="file" accept="image/*" class="hidden glasses-file-input" data-style="sunglasses" data-angle="front">
-                            </label>
-                            <label class="glasses-upload-slot border border-white/20 rounded-lg p-2 cursor-pointer hover:border-white/40 transition flex flex-col items-center gap-1.5">
-                                <img id="preview-sunglasses-sideRight" class="hidden h-8 object-contain mb-1" />
-                                <svg class="w-5 h-5 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                                <span class="text-[10px] text-white/40">右側面</span>
-                                <input type="file" accept="image/*" class="hidden glasses-file-input" data-style="sunglasses" data-angle="sideRight">
-                            </label>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- 臉型推薦 Modal -->
     <div id="face-shape-modal" class="fixed inset-0 z-50 hidden">
@@ -730,7 +584,7 @@
             {
                 el: '#top-bar',
                 title: '頂部功能列',
-                desc: '可返回主系統，右側按鈕提供視光數據、練習紀錄、臉型推薦、全螢幕等功能，也可點「?」隨時重新啟動導覽。',
+                desc: '可返回主系統，右側按鈕提供視光數據、我的試戴照、臉型推薦、全螢幕等功能，也可點「?」隨時重新啟動導覽。',
                 pos: 'bottom'
             },
             {
