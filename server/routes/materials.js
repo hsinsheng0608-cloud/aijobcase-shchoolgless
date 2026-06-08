@@ -87,12 +87,12 @@ async function processUpload(materialId, buffer, mimetype, filename, courseId) {
     const embeddings = await embedBatch(texts);
     console.log(`  ✅ 向量化完成 (${embeddings.length} embeddings)`);
 
-    // Step 4: 存入 pgvector
+    // Step 4: 存入 document_chunks（embedding 以 text 儲存 JSON 陣列，無 pgvector 依賴）
     for (let i = 0; i < chunks.length; i++) {
       const embeddingStr = `[${embeddings[i].join(',')}]`;
       await pool.query(
         `INSERT INTO document_chunks (material_id, content, metadata, embedding)
-         VALUES ($1, $2, $3, $4::vector)`,
+         VALUES ($1, $2, $3, $4)`,
         [materialId, chunks[i].content, JSON.stringify(chunks[i].metadata), embeddingStr]
       );
     }
