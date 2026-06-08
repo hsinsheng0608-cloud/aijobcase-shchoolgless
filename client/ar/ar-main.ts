@@ -329,6 +329,7 @@ modeContact.addEventListener('click', () => {
   // Reset size slider to current lens scale
   sizeRange.value = String(Math.round((renderer.getLensScale() / 1.8) * 100));
   sizeLabel.textContent = `${sizeRange.value}%`;
+  applyOpticsMode();
 });
 
 modeGlasses.addEventListener('click', () => {
@@ -342,6 +343,7 @@ modeGlasses.addEventListener('click', () => {
   sizeRange.value = String(pct);
   sizeLabel.textContent = `${pct}%`;
   glassesScale3D = pct / 100;
+  applyOpticsMode();
 });
 
 // Lens catalog — dynamic buttons from API
@@ -574,6 +576,18 @@ const opticsClose  = document.getElementById('optics-close')!;
 btnOptics.addEventListener('click', () => opticsPanel.classList.toggle('hidden'));
 opticsClose.addEventListener('click', () => opticsPanel.classList.add('hidden'));
 
+// 依模式（眼鏡/隱眼）切換視光數據欄位顯示
+function applyOpticsMode() {
+  const mode = renderer.getMode() === 'contact' ? 'contact' : 'glasses';
+  document.querySelectorAll<HTMLElement>('[data-optics-mode]').forEach((el) => {
+    const m = el.dataset.opticsMode;
+    el.style.display = (m === 'both' || m === mode) ? '' : 'none';
+  });
+  const title = document.getElementById('optics-title');
+  if (title) title.textContent = mode === 'contact' ? '隱形眼鏡 · 視光數據' : '眼鏡 · 視光數據';
+}
+applyOpticsMode();
+
 function updateOpticsPanel(result: FaceResult) {
   if (!result.detected) return;
   const { leftEye, rightEye, noseBridge } = result;
@@ -590,9 +604,12 @@ function updateOpticsPanel(result: FaceResult) {
   const pdLeft  = (Math.abs(noseX - leftEye.irisCenter.x)  * scale).toFixed(1);
   const pdRight = (Math.abs(rightEye.irisCenter.x - noseX) * scale).toFixed(1);
 
-  // 虹膜直徑
+  // 虹膜直徑（隱眼模式即 HVID，決定鏡片直徑）
   const irisL = (leftEye.irisRadius  * 2 * scale).toFixed(1);
   const irisR = (rightEye.irisRadius * 2 * scale).toFixed(1);
+
+  // 隱形眼鏡：建議鏡片直徑 ≈ HVID + 約 2.5mm 覆蓋（軟式鏡片需略大於角膜/虹膜可見直徑）
+  const lensDiaMm = ((parseFloat(irisL) + parseFloat(irisR)) / 2 + 2.5).toFixed(1);
 
   // 眼高差
   const heightDiffMm = (Math.abs(leftEye.irisCenter.y - rightEye.irisCenter.y) * scale).toFixed(1);
@@ -617,6 +634,7 @@ function updateOpticsPanel(result: FaceResult) {
   setOptics('optics-pd-right',    `${pdRight} mm`);
   setOptics('optics-iris-l',      `${irisL} mm`);
   setOptics('optics-iris-r',      `${irisR} mm`);
+  setOptics('optics-lens-dia',    `${lensDiaMm} mm`);
   setOptics('optics-height-diff', `${heightDiffMm} mm`);
   setOptics('optics-tilt',        `${tiltDeg}°`);
   setOptics('optics-frame-width', `${frameWidthMm} mm`);
