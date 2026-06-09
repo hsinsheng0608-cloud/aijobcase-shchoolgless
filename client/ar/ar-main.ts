@@ -3,7 +3,7 @@
  * Orchestrates face detection, lens rendering, guidance, chat, and session recording
  */
 
-import { initFaceDetector, detectFaceInImage, type FaceResult } from './modules/face-detector';
+import { initFaceDetector, detectFaceInImage, resumeCamera, type FaceResult } from './modules/face-detector';
 import { LensRenderer, type LensColor } from './modules/lens-renderer';
 import { registerGlassesUrl } from './modules/glasses-assets';
 import { removeBackground } from '@imgly/background-removal';
@@ -917,6 +917,7 @@ function applyRemovedGlasses(blob: Blob, fromSnap: boolean) {
   renderer.setMode('glasses');
   glasses3DScene.setCatalogTexture(url);
   applyOpticsMode();
+  resumeCamera(); // 套用後確保主相機畫面有在播（iOS 黑屏修正）
   uploadMyGlasses(blob); // 存到「我的眼鏡」（伺服器，永久私人）
   addChatMessage(
     (fromSnap ? '📸 已套用您拍的眼鏡！' : '📷 已套用您的眼鏡！') +
@@ -973,8 +974,15 @@ async function processGlassesPhoto(file: Blob) {
 myGlassesInput?.addEventListener('change', () => {
   const file = myGlassesInput.files?.[0];
   myGlassesInput.value = '';
+  // iOS Safari 開檔案選擇器後主相機常被暫停 → 回來先恢復畫面避免黑屏
+  resumeCamera();
   if (file) processGlassesPhoto(file);
 });
+
+// 從背景/檔案選擇器/相機回到 AR 頁時，恢復主相機畫面（iOS 黑屏修正）
+document.addEventListener('visibilitychange', () => { if (!document.hidden) resumeCamera(); });
+window.addEventListener('focus', () => resumeCamera());
+window.addEventListener('pageshow', () => resumeCamera());
 
 // 自訂相機拍照視窗（桌機/手機通用，不走檔案選擇器）
 const camModal   = document.getElementById('cam-modal');

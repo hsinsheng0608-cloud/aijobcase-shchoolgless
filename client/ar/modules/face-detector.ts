@@ -135,6 +135,37 @@ function extractEye(
   return { irisCenter: center, irisRadius, contour, aperture };
 }
 
+// iOS Safari 開啟檔案選擇器/相機或切到背景時，會暫停甚至中斷 getUserMedia 串流，
+// 回到頁面後 <video> 不會自動恢復 → 黑屏。保留參照以便重新播放或重新取得串流。
+let activeVideo: HTMLVideoElement | null = null;
+let activeStream: MediaStream | null = null;
+let resuming = false;
+
+/** 從背景/檔案選擇器回到 AR 頁時呼叫：串流還活著就重播，已中斷就重新取得 */
+export async function resumeCamera(): Promise<void> {
+  const v = activeVideo;
+  if (!v || resuming) return;
+  resuming = true;
+  try {
+    const live = !!activeStream && activeStream.getVideoTracks().some(t => t.readyState === 'live');
+    if (!live) {
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+        });
+        activeStream = s;
+        v.srcObject = s;
+      } catch (e) {
+        console.warn('[camera] 恢復相機失敗:', e);
+        return;
+      }
+    }
+    try { await v.play(); } catch { /* iOS 偶爾需要使用者手勢，忽略 */ }
+  } finally {
+    resuming = false;
+  }
+}
+
 export async function initFaceDetector(
   videoElement: HTMLVideoElement,
   onResult: OnResultCallback,
@@ -164,6 +195,9 @@ export async function initFaceDetector(
   });
   videoElement.srcObject = stream;
   await videoElement.play();
+  // 保留參照，供 resumeCamera() 在 iOS 從檔案選擇器/背景回來後恢復畫面
+  activeVideo = videoElement;
+  activeStream = stream;
   onProgress(100);
 
   const INTERVAL = 33; // ~30fps cap
