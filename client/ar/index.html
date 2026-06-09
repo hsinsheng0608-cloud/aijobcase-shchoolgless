@@ -55,18 +55,40 @@
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                 </button>
                 <input type="file" id="my-glasses-input" accept="image/*" class="hidden">
-                <!-- 我的眼鏡收藏 -->
-                <button id="btn-my-collection" class="w-8 h-8 flex items-center justify-center rounded-lg bg-amber-700/50 hover:bg-amber-600/70 transition" title="我的眼鏡收藏">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+                <button id="btn-face-shape" class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600/60 hover:bg-indigo-600/80 transition" title="臉型推薦">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </button>
-                <!-- 拍眼鏡模式：隱藏上方款式縮圖列，畫面乾淨 -->
-                <button id="btn-clean-mode" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition" title="拍眼鏡模式（隱藏款式列，畫面乾淨）">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                <button id="btn-fullscreen" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition" title="全螢幕">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 </button>
-                <!-- 儲存試戴照：把目前 AR 畫面截圖下載 -->
-                <button id="btn-save-shot" class="w-8 h-8 flex items-center justify-center rounded-lg bg-pink-600/60 hover:bg-pink-500/80 transition" title="儲存試戴照（下載截圖）">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 12V4m0 8l-3-3m3 3l3-3"/></svg>
-                </button>
+                <!-- ⋯ 更多：把次要功能收進下拉選單，避免上排擁擠 -->
+                <div class="relative">
+                    <button id="btn-more" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition" title="更多功能" aria-haspopup="true" aria-expanded="false">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                    </button>
+                    <div id="more-menu" class="hidden absolute right-0 top-10 w-44 bg-black/85 backdrop-blur border border-white/10 rounded-xl p-1.5 flex flex-col gap-0.5 z-50 shadow-xl shadow-black/40">
+                        <button id="btn-my-collection" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-sm text-white/90 transition text-left">
+                            <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+                            我的眼鏡收藏
+                        </button>
+                        <button id="btn-clean-mode" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-sm text-white/90 transition text-left">
+                            <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            拍眼鏡模式
+                        </button>
+                        <button id="btn-save-shot" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-sm text-white/90 transition text-left">
+                            <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 12V4m0 8l-3-3m3 3l3-3"/></svg>
+                            儲存試戴照
+                        </button>
+                        <button id="btn-history" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-sm text-white/90 transition text-left">
+                            <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            我的試戴照
+                        </button>
+                        <button id="btn-tour" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-sm text-white/90 transition text-left">
+                            <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            操作導覽
+                        </button>
+                    </div>
+                </div>
                 <!-- 去背處理中提示 -->
                 <div id="my-glasses-toast" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/60">
                     <div class="bg-black/80 border border-amber-500/40 rounded-2xl px-6 py-5 flex flex-col items-center gap-3">
@@ -90,19 +112,7 @@
                         </div>
                     </div>
                 </div>
-                <button id="btn-face-shape" class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600/60 hover:bg-indigo-600/80 transition" title="臉型推薦">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                </button>
-                <button id="btn-history" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition" title="我的試戴照">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                </button>
-                <button id="btn-fullscreen" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition" title="全螢幕">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-                </button>
-                <button id="btn-tour" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition" title="操作導覽">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                </button>
-                <span id="user-name" class="text-sm text-white/70"></span>
+                <span id="user-name" class="hidden 2xl:inline text-sm text-white/70"></span>
             </div>
         </div>
 
@@ -118,8 +128,8 @@
         </div>
 
         <!-- 視光科學數據面板（備用浮動版，由左側 Tab 取代） -->
-        <div id="optics-panel" class="absolute bottom-20 left-4 z-20">
-            <div class="bg-black/70 backdrop-blur-md rounded-2xl p-3 border border-cyan-500/30 min-w-[210px]">
+        <div id="optics-panel" class="absolute bottom-20 left-4 z-20 max-w-[58vw] sm:max-w-[16rem]">
+            <div class="bg-black/70 backdrop-blur-md rounded-2xl p-3 border border-cyan-500/30 w-full sm:min-w-[210px]">
                 <div class="flex items-center justify-between mb-2">
                     <span id="optics-title" class="text-[10px] font-semibold text-cyan-400 tracking-widest uppercase">視光量測數據</span>
                     <button id="optics-close" class="text-white/30 hover:text-white/70 text-xs leading-none">✕</button>
@@ -578,6 +588,25 @@
             const collapsed = topBar.classList.toggle('panel-collapsed');
             iconTopbar.style.transform = collapsed ? 'rotate(180deg)' : '';
         });
+
+        /* ── ⋯ 更多 下拉選單 ── */
+        (function () {
+            const moreBtn  = document.getElementById('btn-more');
+            const moreMenu = document.getElementById('more-menu');
+            if (!moreBtn || !moreMenu) return;
+            const closeMenu = () => { moreMenu.classList.add('hidden'); moreBtn.setAttribute('aria-expanded', 'false'); };
+            moreBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const willOpen = moreMenu.classList.contains('hidden');
+                moreMenu.classList.toggle('hidden');
+                moreBtn.setAttribute('aria-expanded', String(willOpen));
+            });
+            // 點選單內任一項或點外面都收起
+            moreMenu.addEventListener('click', closeMenu);
+            document.addEventListener('click', function (e) {
+                if (!moreMenu.classList.contains('hidden') && !moreMenu.contains(e.target) && e.target !== moreBtn) closeMenu();
+            });
+        })();
 
         /* ── Guided Tour ── */
         var TOUR_STEPS = [
