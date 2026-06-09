@@ -93,9 +93,13 @@ export default function GlassesManagement() {
     let imageBlob: Blob = file;
     if (autoRemoveBg) {
       try {
-        setSuccess('正在自動去背…（首次需下載模型）');
+        setSuccess('正在自動去背…（首次需下載高精度模型，請稍候）');
         const { removeBackground } = await import('@imgly/background-removal');
-        imageBlob = await removeBackground(file);
+        imageBlob = await removeBackground(file, {
+          model: 'isnet',                               // 最高精度模型（預設只是 isnet_fp16 中階）
+          device: 'gpu',                                // 有 WebGL 就用 GPU，邊緣更乾淨
+          output: { format: 'image/png', quality: 1 },  // 無損 PNG，保留 alpha 邊緣
+        });
         setSuccess('');
       } catch (err) {
         console.warn('[glasses] 去背失敗，改用原圖上傳:', err);
