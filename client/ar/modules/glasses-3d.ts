@@ -216,7 +216,7 @@ export class Glasses3D {
     ) * sx;
     const cosYaw   = Math.max(Math.abs(Math.cos(pose.yaw)), 0.3);
     const trueDist = eyeDistPx / cosYaw;
-    const rawUnit  = trueDist * scale * 0.92;
+    const rawUnit  = trueDist * scale * 1.05;  // 0.92→1.05：套上去更貼合，預設不再偏小
 
     // ── 平滑：旋轉強平滑、位置反應快、大小中等 ──
     if (!this.hasSmooth) {

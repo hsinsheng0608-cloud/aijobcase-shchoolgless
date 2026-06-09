@@ -218,7 +218,7 @@ sizeRange.addEventListener('input', () => {
     renderer.setGlassesScale(2.0 * (pct / 100));
     glassesScale3D = pct / 100;
   } else {
-    renderer.setLensScale(1.8 * (pct / 100));
+    renderer.setLensScale(2.1 * (pct / 100));
   }
 });
 
@@ -811,7 +811,7 @@ async function makeLensTransparent(blob: Blob): Promise<Blob> {
     if (!w || !h) return blob;
     const cv = document.createElement('canvas');
     cv.width = w; cv.height = h;
-    const ctx = cv.getContext('2d');
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
     if (!ctx) return blob;
     ctx.drawImage(img, 0, 0);
     const imgData = ctx.getImageData(0, 0, w, h);
@@ -865,7 +865,7 @@ async function cropToContent(blob: Blob): Promise<Blob> {
     if (!w || !h) return blob;
     const cv = document.createElement('canvas');
     cv.width = w; cv.height = h;
-    const ctx = cv.getContext('2d');
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
     if (!ctx) return blob;
     ctx.drawImage(img, 0, 0);
     const d = ctx.getImageData(0, 0, w, h).data;
@@ -987,8 +987,19 @@ let camFacing: 'environment' | 'user' = 'environment';
 
 async function startCamStream() {
   if (camStream) camStream.getTracks().forEach(t => t.stop());
-  camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: camFacing } });
-  if (camVideo) { camVideo.srcObject = camStream; await camVideo.play(); }
+  camStream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: camFacing, width: { ideal: 1280 }, height: { ideal: 960 } },
+  });
+  if (camVideo) {
+    camVideo.srcObject = camStream;
+    // 等到實際有影格資料再繼續，避免手機拍到全黑幀
+    await new Promise<void>((resolve) => {
+      const done = () => { camVideo.removeEventListener('loadeddata', done); resolve(); };
+      if (camVideo.readyState >= 2) resolve();
+      else camVideo.addEventListener('loadeddata', done);
+    });
+    await camVideo.play();
+  }
 }
 async function openCamera() {
   try {
@@ -1018,11 +1029,15 @@ camFlip?.addEventListener('click', async () => {
   try { await startCamStream(); } catch (e) { console.warn('[camera] 翻轉失敗:', e); }
 });
 camShutter?.addEventListener('click', () => {
-  if (!camVideo || !camVideo.videoWidth) return;
+  // readyState < 2 代表還沒有可用影格，直接拍會得到黑畫面
+  if (!camVideo || !camVideo.videoWidth || camVideo.readyState < 2) {
+    console.warn('[camera] 影像尚未就緒，請稍候再拍');
+    return;
+  }
   const canvas = document.createElement('canvas');
   canvas.width = camVideo.videoWidth;
   canvas.height = camVideo.videoHeight;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   if (!ctx) return;
   ctx.drawImage(camVideo, 0, 0, canvas.width, canvas.height);
   canvas.toBlob((blob) => { closeCamera(); if (blob) processGlassesPhoto(blob); }, 'image/png');

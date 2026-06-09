@@ -30,7 +30,7 @@ const LENS_COLORS: Record<LensColor, { inner: string; outer: string; opacity: nu
   grey:   { inner: 'rgba(150, 150, 150, 0.55)', outer: 'rgba(80, 80, 80, 0.75)',    opacity: 0.65 },
 };
 
-const LENS_SIZE_MULTIPLIER = 1.8;
+const LENS_SIZE_MULTIPLIER = 2.1;  // 1.8→2.1：隱形眼鏡套上去不再偏小
 // 鏡片中心在圖片中佔 ~50% 寬度，要讓鏡片中心對齊瞳孔，需 1/0.5 ≈ 2.0
 const DEFAULT_GLASSES_SCALE = 2.0;
 
@@ -79,7 +79,7 @@ export class LensRenderer {
     const ctx = this.ctx;
     const { irisCenter, irisRadius } = eye;
     // Clamp to 3.5% of canvas height — prevents huge circles if MediaPipe mis-detects glasses as iris
-    const maxIris = this.canvas.height * 0.035;
+    const maxIris = this.canvas.height * 0.045;  // 放寬上限，配合放大後的隱眼不被截小
     const lensRadius = Math.min(irisRadius, maxIris) * this.lensScale;
 
     ctx.save();
