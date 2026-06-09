@@ -386,6 +386,9 @@
                 <h3 class="text-sm font-semibold text-white/90 mb-3 flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
                     AI 助教
+                    <button id="btn-chat-fullscreen" class="ml-auto w-7 h-7 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition" title="全螢幕對話 / 還原">
+                        <svg id="icon-chat-fullscreen" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                    </button>
                 </h3>
                 <div id="chat-messages" class="flex-1 overflow-y-auto space-y-3 mb-3">
                     <div class="text-xs text-white/50 text-center py-4">有任何操作問題，隨時提問！</div>
@@ -594,6 +597,16 @@
             const collapsed = topBar.classList.toggle('panel-collapsed');
             iconTopbar.style.transform = collapsed ? 'rotate(180deg)' : '';
         });
+
+        /* ── AI 助教 全螢幕對話切換 ── */
+        (function () {
+            const panel = document.getElementById('chat-panel');
+            const btn = document.getElementById('btn-chat-fullscreen');
+            if (panel && btn) btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                panel.classList.toggle('chat-fullscreen');
+            });
+        })();
 
         /* ── 收合鏡片/款式列 ── */
         (function () {

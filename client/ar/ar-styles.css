@@ -215,6 +215,22 @@
     .mobile-fab { display: none !important; }
 }
 
+/* AI 助教 全螢幕對話：覆寫桌機側欄與手機底部抽屜定位 */
+#chat-panel.chat-fullscreen {
+    position: fixed !important;
+    inset: 0.5rem !important;
+    top: calc(env(safe-area-inset-top) + 0.5rem) !important;
+    width: auto !important;
+    max-height: none !important;
+    transform: none !important;
+    z-index: 60 !important;
+}
+#chat-panel.chat-fullscreen > div {
+    height: 100% !important;
+    max-height: none !important;
+    border-radius: 1rem !important;
+}
+
 /* 收合鏡片/款式列：只留模式切換鈕與收合鈕 */
 #mode-selector.selector-collapsed #contact-options,
 #mode-selector.selector-collapsed #glasses-options,
