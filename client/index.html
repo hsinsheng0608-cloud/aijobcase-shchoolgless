@@ -19,6 +19,9 @@
         * { box-sizing: border-box; }
         body { overflow-x: hidden; }
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        /* iOS 加到主畫面（standalone, black-translucent）時，內容會延伸到瀏海/狀態列下方，
+           頂部列需加上安全區域內距，避免被遮住 */
+        .safe-area-top { padding-top: calc(env(safe-area-inset-top) + 0.75rem); }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900">

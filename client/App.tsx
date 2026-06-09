@@ -94,7 +94,7 @@ const App: React.FC = () => {
 
       <main className="md:ml-64 min-h-screen">
         {/* Mobile top bar */}
-        <div className="md:hidden flex items-center justify-between px-4 py-3 bg-slate-900 text-white sticky top-0 z-30">
+        <div className="md:hidden flex items-center justify-between px-4 pb-3 bg-slate-900 text-white sticky top-0 z-30 safe-area-top">
           <button
             onClick={() => setSidebarOpen(true)}
             className="p-2 rounded-lg hover:bg-slate-800 transition"

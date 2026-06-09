@@ -185,9 +185,15 @@
         <!-- Mode Toggle + Selector -->
         <div id="mode-selector" class="absolute top-16 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-2">
             <!-- Mode Toggle -->
-            <div class="flex bg-black/50 backdrop-blur rounded-full p-1">
-                <button id="mode-contact" class="mode-btn active px-4 py-1.5 rounded-full text-xs font-medium transition">隱形眼鏡</button>
-                <button id="mode-glasses" class="mode-btn px-4 py-1.5 rounded-full text-xs font-medium transition">眼鏡</button>
+            <div class="flex items-center gap-1.5">
+                <div class="flex bg-black/50 backdrop-blur rounded-full p-1">
+                    <button id="mode-contact" class="mode-btn active px-4 py-1.5 rounded-full text-xs font-medium transition">隱形眼鏡</button>
+                    <button id="mode-glasses" class="mode-btn px-4 py-1.5 rounded-full text-xs font-medium transition">眼鏡</button>
+                </div>
+                <!-- 收合鏡片/款式列，避免和上方功能列/選單重疊 -->
+                <button id="btn-collapse-selector" class="w-8 h-8 flex items-center justify-center rounded-full bg-black/50 backdrop-blur text-white/70 hover:text-white transition" title="收合/展開款式列">
+                    <svg id="icon-collapse-selector" class="w-4 h-4 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                </button>
             </div>
             <!-- Contact Lens Catalog (populated dynamically from /api/glasses?item_type=lens) -->
             <div id="contact-options" class="flex gap-2 overflow-x-auto bg-black/50 backdrop-blur rounded-2xl px-3 py-2 scrollbar-none" style="max-width:90vw">
@@ -588,6 +594,13 @@
             const collapsed = topBar.classList.toggle('panel-collapsed');
             iconTopbar.style.transform = collapsed ? 'rotate(180deg)' : '';
         });
+
+        /* ── 收合鏡片/款式列 ── */
+        (function () {
+            const sel = document.getElementById('mode-selector');
+            const btn = document.getElementById('btn-collapse-selector');
+            if (sel && btn) btn.addEventListener('click', () => sel.classList.toggle('selector-collapsed'));
+        })();
 
         /* ── ⋯ 更多 下拉選單 ── */
         (function () {

@@ -215,6 +215,16 @@
     .mobile-fab { display: none !important; }
 }
 
+/* 收合鏡片/款式列：只留模式切換鈕與收合鈕 */
+#mode-selector.selector-collapsed #contact-options,
+#mode-selector.selector-collapsed #glasses-options,
+#mode-selector.selector-collapsed #size-slider {
+    display: none !important;
+}
+#mode-selector.selector-collapsed #icon-collapse-selector {
+    transform: rotate(180deg);
+}
+
 /* ── 教學面板 ── */
 .edu-tab { transition: color 0.15s, border-color 0.15s; }
 .edu-tab.active { color: rgba(255,255,255,0.95); border-color: rgb(99,102,241); }

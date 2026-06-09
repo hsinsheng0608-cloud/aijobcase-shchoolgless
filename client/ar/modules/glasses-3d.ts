@@ -138,7 +138,7 @@ export class Glasses3D {
    * - scale.y × (FRONT.imgW/FRONT.imgH) 修正 1000×1000 PNG 在 2:1 plane 上的比例
    * - position.y 讓鏡框 hinge (~37.5% from top) 對齊 arm attachY，消除斷層
    */
-  setCatalogTexture(imageUrl: string) {
+  setCatalogTexture(imageUrl: string, hideTemples = false) {
     const tex = new THREE.TextureLoader().load(imageUrl, (t) => {
       // 依「實際圖片長寬比」設定 plane 高度，避免眼鏡被拉長/壓扁
       const iw = (t.image && t.image.width) || 1;
@@ -155,8 +155,8 @@ export class Glasses3D {
     this.frontMesh.position.y = 0;
     this.frontMesh.visible    = true;
     this.armsGroup.position.y = -0.10;
-    // 上傳/型錄眼鏡多半只有正面照，程式產生的鏡腳幾乎對不準 → 隱藏假鏡腳，畫面乾淨
-    this.armsGroup.visible    = false;
+    // 只有「使用者自己拍/上傳」的正面照才藏假鏡腳（幾乎對不準）；內建/型錄樣本維持顯示
+    this.armsGroup.visible    = !hideTemples;
   }
 
   /** 切回內建貼圖（black/tortoise/gold 等） */

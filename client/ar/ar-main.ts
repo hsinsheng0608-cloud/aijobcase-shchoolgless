@@ -915,7 +915,7 @@ function applyRemovedGlasses(blob: Blob, fromSnap: boolean) {
   const url = URL.createObjectURL(blob);
   usingCatalogGlasses = true;
   renderer.setMode('glasses');
-  glasses3DScene.setCatalogTexture(url);
+  glasses3DScene.setCatalogTexture(url, true); // 自己拍的眼鏡：藏掉對不準的假鏡腳
   applyOpticsMode();
   resumeCamera(); // 套用後確保主相機畫面有在播（iOS 黑屏修正）
   uploadMyGlasses(blob); // 存到「我的眼鏡」（伺服器，永久私人）
@@ -1101,7 +1101,7 @@ async function loadMyCollection() {
       img.addEventListener('click', () => {
         usingCatalogGlasses = true;
         renderer.setMode('glasses');
-        glasses3DScene.setCatalogTexture(imgUrl);
+        glasses3DScene.setCatalogTexture(imgUrl, true); // 我的眼鏡收藏=自己上傳的，藏假鏡腳
         applyOpticsMode();
         myCollectionModal?.classList.add('hidden');
       });
