@@ -48,7 +48,7 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard': return <Dashboard role={user.role} />;
+      case 'dashboard': return <Dashboard role={user.role} onNavigate={setActiveTab} />;
       case 'courses': return (
         <CourseList
           userRole={user.role}
@@ -76,7 +76,7 @@ const App: React.FC = () => {
       case 'admin-users': return <AdminUserManagement />;
       case 'usage': return <UsageView />;
       case 'manual': return <SystemManual userRole={user.role} />;
-      default: return <Dashboard role={user.role} />;
+      default: return <Dashboard role={user.role} onNavigate={setActiveTab} />;
     }
   };
 
