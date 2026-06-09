@@ -10,7 +10,7 @@ import {
   IconUpload,
   IconTrash
 } from './Icons';
-import { uploadMaterial, getMaterials, pollMaterialStatus } from '../services/materialService';
+import { uploadMaterial, getMaterials, pollMaterialStatus, deleteMaterial } from '../services/materialService';
 import { API_BASE } from '../apiBase';
 import { getAuthHeaders } from '../services/authService';
 
@@ -41,6 +41,7 @@ const MaterialManagement: React.FC<MaterialManagementProps> = ({ courseId }) => 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [courses, setCourses] = useState<{id: string; name: string}[]>([]);
   const [internalCourseId, setInternalCourseId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const effectiveCourseId = courseId ?? internalCourseId;
 
@@ -123,6 +124,19 @@ const MaterialManagement: React.FC<MaterialManagementProps> = ({ courseId }) => 
     }
   };
 
+  const handleDelete = async (mat: Material) => {
+    if (!window.confirm(`確定要刪除教材「${mat.title}」嗎？\n此動作會一併移除它的 AI 索引，且無法復原。`)) return;
+    setDeletingId(mat.id);
+    try {
+      await deleteMaterial(mat.id);
+      setMaterials(prev => prev.filter(m => m.id !== mat.id));
+    } catch (err: any) {
+      alert('刪除失敗: ' + err.message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const currentCourseName = courses.find(c => c.id === effectiveCourseId)?.name ?? '';
 
   return (
@@ -181,6 +195,23 @@ const MaterialManagement: React.FC<MaterialManagementProps> = ({ courseId }) => 
                   </span>
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={() => handleDelete(mat)}
+                disabled={deletingId === mat.id || mat.status === 'PROCESSING'}
+                title="刪除教材"
+                aria-label="刪除教材"
+                className="shrink-0 p-2 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition opacity-0 group-hover:opacity-100 focus:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                {deletingId === mat.id ? (
+                  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                ) : (
+                  <IconTrash className="w-5 h-5" />
+                )}
+              </button>
             </div>
           </div>
         ))}
