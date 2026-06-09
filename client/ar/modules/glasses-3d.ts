@@ -155,6 +155,8 @@ export class Glasses3D {
     this.frontMesh.position.y = 0;
     this.frontMesh.visible    = true;
     this.armsGroup.position.y = -0.10;
+    // 上傳/型錄眼鏡多半只有正面照，程式產生的鏡腳幾乎對不準 → 隱藏假鏡腳，畫面乾淨
+    this.armsGroup.visible    = false;
   }
 
   /** 切回內建貼圖（black/tortoise/gold 等） */
@@ -168,6 +170,7 @@ export class Glasses3D {
     this.frontMesh.position.y = 0;
     this.frontMesh.visible    = true;
     this.armsGroup.position.y = 0;
+    this.armsGroup.visible    = true;  // 內建眼鏡有對好的鏡腳，恢復顯示
   }
 
   resize() {
@@ -216,7 +219,7 @@ export class Glasses3D {
     ) * sx;
     const cosYaw   = Math.max(Math.abs(Math.cos(pose.yaw)), 0.3);
     const trueDist = eyeDistPx / cosYaw;
-    const rawUnit  = trueDist * scale * 1.05;  // 0.92→1.05：套上去更貼合，預設不再偏小
+    const rawUnit  = trueDist * scale * 1.25;  // 放大基準，預設套上去更貼合臉寬（仍可用尺寸拉桿微調）
 
     // ── 平滑：旋轉強平滑、位置反應快、大小中等 ──
     if (!this.hasSmooth) {
