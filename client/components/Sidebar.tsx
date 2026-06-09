@@ -32,7 +32,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentRole, userName, activeTab, set
     { id: 'knowledge-mgmt', label: '問答管理', Icon: IconFile, roles: [UserRole.TEACHER, UserRole.ADMIN] },
     { id: 'ar-practice', label: 'AR 模擬練習', Icon: IconEye, roles: [UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT], external: '/ar/index.html' },
     { id: 'face-recommend', label: '臉型眼鏡推薦', Icon: IconEye, roles: [UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT] },
-    { id: 'ar-report', label: 'AR 練習報表', Icon: IconChart, roles: [UserRole.TEACHER, UserRole.ADMIN] },
     { id: 'glasses-mgmt', label: '眼鏡素材管理', Icon: IconFile, roles: [UserRole.TEACHER, UserRole.ADMIN] },
     { id: 'exams', label: '測驗系統', Icon: IconZap, roles: [UserRole.TEACHER, UserRole.STUDENT] },
     { id: 'admin-users', label: '用戶管理', Icon: IconUser, roles: [UserRole.ADMIN, UserRole.TEACHER] },
