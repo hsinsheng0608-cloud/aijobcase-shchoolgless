@@ -84,8 +84,9 @@ export default function FaceShapeRecommendation({ detectedFaceShape, onSelectIte
 
   const imgSrc = (url: string) => {
     if (!url) return '';
-    if (url.startsWith('http')) return url;
-    return url;
+    if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('blob:')) return url;
+    // 相對路徑（/uploads/...）要指向後端網域，否則會去要前端網域而 404 破圖
+    return `${API}${url}`;
   };
   const allFaceShapes: FaceShape[] = ['round', 'oval', 'square', 'heart', 'long'];
 
