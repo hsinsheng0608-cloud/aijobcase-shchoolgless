@@ -40,13 +40,13 @@
     <!-- Main AR Interface -->
     <div id="ar-app" class="fixed inset-0 hidden">
         <!-- Top Bar -->
-        <div id="top-bar" class="absolute top-0 left-0 right-0 z-30 bg-gradient-to-b from-black/70 to-transparent px-4 py-3 flex items-center justify-between">
-            <a href="/" class="flex items-center gap-2 text-white/80 hover:text-white transition">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        <div id="top-bar" class="absolute top-0 left-0 right-0 z-30 bg-gradient-to-b from-black/70 to-transparent px-3 py-2 flex items-center justify-between gap-2">
+            <a href="/" class="flex items-center gap-1.5 text-white/80 hover:text-white transition shrink-0 whitespace-nowrap">
+                <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 <span class="text-sm">返回系統</span>
             </a>
-            <h1 class="text-sm font-medium">AR 隱形眼鏡模擬練習</h1>
-            <div class="flex items-center gap-3">
+            <h1 class="hidden xl:block text-sm font-medium shrink-0">AR 隱形眼鏡模擬練習</h1>
+            <div class="flex items-center justify-end flex-wrap gap-1.5 min-w-0">
                 <button id="btn-optics" class="w-8 h-8 flex items-center justify-center rounded-lg bg-cyan-700/60 hover:bg-cyan-600/80 transition" title="視光數據">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                 </button>
@@ -173,7 +173,7 @@
         </div>
 
         <!-- Mode Toggle + Selector -->
-        <div id="mode-selector" class="absolute top-16 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2">
+        <div id="mode-selector" class="absolute top-16 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-2">
             <!-- Mode Toggle -->
             <div class="flex bg-black/50 backdrop-blur rounded-full p-1">
                 <button id="mode-contact" class="mode-btn active px-4 py-1.5 rounded-full text-xs font-medium transition">隱形眼鏡</button>
