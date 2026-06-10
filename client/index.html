@@ -26,6 +26,14 @@
 </head>
 <body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
+    <script>
+      // 提前攔截 Android 的 PWA 安裝事件，交給 React 的「加入主畫面」橫幅使用
+      window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        window.__a2hsPrompt = e;
+        window.dispatchEvent(new Event('a2hs-ready'));
+      });
+    </script>
     <script type="module" src="/index.tsx"></script>
 </body>
 </html>

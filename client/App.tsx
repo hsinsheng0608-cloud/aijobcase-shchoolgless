@@ -19,6 +19,7 @@ import SystemManual from './components/SystemManual';
 import { UserRole, User } from './types';
 import { authService } from './services/authService';
 import OnboardingTour from './components/OnboardingTour';
+import AddToHomeBanner from './components/AddToHomeBanner';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(authService.getCurrentUser());
@@ -35,11 +36,14 @@ const App: React.FC = () => {
   };
 
   if (!user) {
-    return <LoginView onLoginSuccess={() => {
+    return <>
+      <AddToHomeBanner />
+      <LoginView onLoginSuccess={() => {
       const loggedInUser = authService.getCurrentUser();
       setUser(loggedInUser);
       // Students now land on main app (AR accessible via sidebar)
-    }} />;
+    }} />
+    </>;
   }
 
   const handleLogout = () => {
@@ -85,6 +89,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50">
       {showOnboarding && <OnboardingTour onComplete={completeOnboarding} />}
+      <AddToHomeBanner />
       <Sidebar
         currentRole={user.role}
         userName={user.name}
