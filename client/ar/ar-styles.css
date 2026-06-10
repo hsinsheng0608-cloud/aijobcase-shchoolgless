@@ -215,6 +215,41 @@
     .mobile-fab { display: none !important; }
 }
 
+/* ── 一鍵淨空畫面（只留相機與還原鈕）── */
+body.ui-clean #top-bar,
+body.ui-clean #mode-selector,
+body.ui-clean #guidance-panel,
+body.ui-clean #chat-panel,
+body.ui-clean #optics-panel,
+body.ui-clean #btn-snap-glasses,
+body.ui-clean .mobile-fab,
+body.ui-clean .panel-toggle-top {
+    display: none !important;
+}
+#btn-clean-all {
+    position: fixed;
+    right: 0.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 70;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 9999px;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    color: rgba(255, 255, 255, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: background 0.15s;
+}
+#btn-clean-all:hover { background: rgba(0, 0, 0, 0.75); }
+body.ui-clean #btn-clean-all {
+    background: rgba(99, 102, 241, 0.85);  /* 淨空中：亮紫醒目，提示可還原 */
+    color: #fff;
+}
+
 /* AI 助教 全螢幕對話：覆寫桌機側欄與手機底部抽屜定位 */
 #chat-panel.chat-fullscreen {
     position: fixed !important;
