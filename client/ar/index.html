@@ -636,6 +636,22 @@
                 e.stopPropagation();
                 panel.classList.toggle('chat-fullscreen');
             });
+            // 點標題列逐級退回：全螢幕 → 一般大小 → （手機抽屜）關閉
+            const header = panel && panel.querySelector('h3');
+            if (header) {
+                header.style.cursor = 'pointer';
+                header.title = '點一下：縮小 / 收合對話框';
+                header.addEventListener('click', function () {
+                    if (panel.classList.contains('chat-fullscreen')) {
+                        panel.classList.remove('chat-fullscreen');
+                        return;
+                    }
+                    if (panel.classList.contains('panel-open')) {
+                        panel.classList.remove('panel-open');
+                        document.getElementById('mobile-panel-backdrop')?.classList.remove('active');
+                    }
+                });
+            }
         })();
 
         /* ── 收合鏡片/款式列 ── */

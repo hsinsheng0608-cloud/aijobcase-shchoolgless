@@ -561,6 +561,11 @@ function attachTryOnButtons(msgEl: HTMLElement, names: string[]) {
            : '⚠️ 套用失敗，請從上方款式列手動選擇。',
         'ai',
       );
+      // 套用成功 → 自動收合聊天面板，讓使用者立刻看到臉上的效果
+      if (ok) {
+        chatPanel.classList.remove('panel-open', 'chat-fullscreen');
+        mobileBackdrop?.classList.remove('active');
+      }
     });
     row.appendChild(b);
   });
@@ -616,6 +621,10 @@ async function handleSendMessage(text: string) {
                : `⚠️ 找不到「${m[1].trim()}」這個款式，請從上方款式列手動選擇。`,
             'ai',
           );
+          if (ok) {
+            chatPanel.classList.remove('panel-open', 'chat-fullscreen');
+            mobileBackdrop?.classList.remove('active');
+          }
           return;
         }
         // 沒有指令但回覆中有推薦款式 → 直接附「👓 試戴」按鈕，點了就套用（免打字確認）
