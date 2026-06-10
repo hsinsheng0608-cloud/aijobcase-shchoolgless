@@ -222,6 +222,12 @@ sizeRange.addEventListener('input', () => {
   }
 });
 
+// 眼鏡高低位置微調滑桿（眼鏡模式）
+const posRange = document.getElementById('pos-range') as HTMLInputElement | null;
+posRange?.addEventListener('input', () => {
+  glasses3DScene.setOffsetY(parseInt(posRange.value, 10) / 100);
+});
+
 // Fullscreen toggle
 const btnFullscreen = document.getElementById('btn-fullscreen')!;
 btnFullscreen.addEventListener('click', () => {
@@ -340,6 +346,8 @@ modeContact.addEventListener('click', () => {
   modeGlasses.classList.remove('active');
   contactOptions.style.display = 'flex';
   glassesOptions.style.display = 'none';
+  const posSlider = document.getElementById('pos-slider');
+  if (posSlider) posSlider.style.display = 'none';
   // Reset size slider to current lens scale
   sizeRange.value = String(Math.round((renderer.getLensScale() / 1.8) * 100));
   sizeLabel.textContent = `${sizeRange.value}%`;
@@ -352,6 +360,8 @@ modeGlasses.addEventListener('click', () => {
   modeContact.classList.remove('active');
   glassesOptions.style.display = 'flex';
   contactOptions.style.display = 'none';
+  const posSlider = document.getElementById('pos-slider');
+  if (posSlider) posSlider.style.display = 'flex';
   // Reset size slider and sync glassesScale3D
   const pct = Math.round((renderer.getGlassesScale() / 2.0) * 100);
   sizeRange.value = String(pct);
@@ -492,6 +502,12 @@ function getArContext(): string {
   if (selectedCard) {
     const label = selectedCard.querySelector<HTMLElement>('.text-xs.font-medium')?.textContent ?? '';
     if (label) parts.push(`已選臉型：${label}`);
+  }
+
+  // AI 鏡頭自動辨識的臉型 → 讓 AI 助教能直接回答「我適合什麼眼鏡」
+  if (latestFaceResult?.faceShape) {
+    const zh: Record<string, string> = { round: '圓臉', oval: '蛋形臉', square: '方形臉', heart: '倒三角臉', long: '長形臉' };
+    parts.push(`AI 鏡頭辨識臉型：${zh[latestFaceResult.faceShape] || latestFaceResult.faceShape}`);
   }
 
   if (sessionActive) {
@@ -775,7 +791,24 @@ document.querySelectorAll('.face-shape-btn').forEach((btn) => {
   });
 });
 
-btnFaceShape?.addEventListener('click', () => faceShapeModal.classList.remove('hidden'));
+// AI 自動臉型辨識：開啟彈窗時若鏡頭已偵測到臉型，自動選取並顯示提示（仍可手動更改）
+const SHAPE_ZH: Record<string, string> = { round: '圓臉', oval: '蛋形臉', square: '方形臉', heart: '倒三角臉', long: '長形臉' };
+const SHAPE_TO_BTN: Record<string, string> = { round: 'round', oval: 'oval', square: 'square', heart: 'heart', long: 'oblong' };
+btnFaceShape?.addEventListener('click', () => {
+  faceShapeModal.classList.remove('hidden');
+  const autoBanner = document.getElementById('face-shape-auto');
+  const detected = latestFaceResult?.faceShape;
+  if (detected && autoBanner) {
+    const conf = Math.round((latestFaceResult?.faceShapeConfidence ?? 0) * 100);
+    autoBanner.textContent = `🤖 AI 鏡頭辨識：你的臉型是「${SHAPE_ZH[detected] || detected}」${conf ? `（信心 ${conf}%）` : ''}，已自動選取，可手動更改`;
+    autoBanner.classList.remove('hidden');
+    const btn = document.querySelector<HTMLElement>(`.face-shape-btn[data-shape="${SHAPE_TO_BTN[detected] || detected}"]`);
+    btn?.click();
+  } else if (autoBanner) {
+    autoBanner.textContent = '💡 把臉正對鏡頭幾秒，AI 會自動辨識臉型';
+    autoBanner.classList.remove('hidden');
+  }
+});
 faceShapeClose?.addEventListener('click', () => faceShapeModal.classList.add('hidden'));
 faceShapeBackdrop?.addEventListener('click', () => faceShapeModal.classList.add('hidden'));
 
@@ -788,7 +821,7 @@ const myGlassesToastText = document.getElementById('my-glasses-toast-text');
 // 去背（用較小較快的 quint8 模型 + 進度顯示）→ 再裁切掉四周透明空白，讓眼鏡填滿
 async function removeBg(source: Blob): Promise<Blob> {
   const removed = await removeBackground(source, {
-    model: 'isnet_quint8', // 量化小模型，下載與運算都更快
+    model: 'isnet', // 全精度模型：鏡框邊緣去背乾淨很多（首次下載較久，有進度顯示）
     progress: (key: string, cur: number, total: number) => {
       if (!myGlassesToastText) return;
       if (key.startsWith('fetch') && total) {

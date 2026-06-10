@@ -16,9 +16,9 @@ const FRONT = {
 };
 
 // 平滑（越小越平滑）：旋轉強平滑避免抖動，位置反應快避免拖移
-const ROT_SMOOTH = 0.18;
-const POS_SMOOTH = 0.75;  // 0.45 → 0.75：緊貼臉，不再 lag
-const SIZE_SMOOTH = 0.20;
+const ROT_SMOOTH = 0.22;
+const POS_SMOOTH = 0.85;  // 提高反應速度，減少移動時眼鏡「滑掉」
+const SIZE_SMOOTH = 0.28;
 
 const STUB = {
   len:   1.80,    // 加長到 ≈108mm 接近耳朵
@@ -30,8 +30,8 @@ const STUB = {
 };
 
 // 鏡腳依 yaw 淡化：頭轉時遠側鏡腳變透明，避免戳眼
-const FADE_START = 0.10;  // |yaw| > 0.10 開始淡化遠側
-const FADE_RANGE = 0.35;  // 淡化過渡範圍
+const FADE_START = 0.03;  // 更早開始淡化，避免鏡腳掃過眼睛
+const FADE_RANGE = 0.18;  // 更快淡完
 
 export class Glasses3D {
   private renderer: THREE.WebGLRenderer;
@@ -50,6 +50,8 @@ export class Glasses3D {
   private frontMat!: THREE.MeshBasicMaterial;
   private defaultTex!: THREE.Texture;
   private armsGroup!: THREE.Group;
+  // 使用者垂直微調（臉部單位，-0.5~0.5；正值往下）
+  private offsetY = 0;
 
   constructor(canvas: HTMLCanvasElement, video: HTMLVideoElement) {
     this.videoEl = video;
@@ -132,6 +134,9 @@ export class Glasses3D {
     this.templeMatRight.color.setHex(hex);
     this.templeMatLeft.color.setHex(hex);
   }
+
+  /** 垂直位置微調（-0.5 ~ 0.5，正值往下移） */
+  setOffsetY(v: number) { this.offsetY = v; }
 
   /**
    * catalog 眼鏡換貼圖：
@@ -236,7 +241,7 @@ export class Glasses3D {
     }
 
     this.glasses.visible = true;
-    this.glasses.position.set(this.smCx, this.smCy, 0);
+    this.glasses.position.set(this.smCx, this.smCy + this.offsetY * this.smUnit, 0);
     this.glasses.scale.set(this.smUnit, -this.smUnit, this.smUnit);
     this.glasses.rotation.set(-this.smPitch, -this.smYaw, this.smRoll, 'YXZ');
 

@@ -21,6 +21,9 @@ export interface FaceResult {
   pose?: { yaw: number; pitch: number; roll: number };
   detected: boolean;
   fallback?: boolean;
+  // AI 自動臉型辨識（約每秒更新一次；正面時較準）
+  faceShape?: 'round' | 'oval' | 'square' | 'heart' | 'long';
+  faceShapeConfidence?: number;
 }
 
 type OnResultCallback = (result: FaceResult) => void;
@@ -245,7 +248,18 @@ export async function initFaceDetector(
             pose = extractEulerYXZ(Array.from(mat.data));
           }
 
-          onResult({ leftEye, rightEye, noseBridge, yaw, pose, detected: true });
+          // AI 臉型辨識：約每秒一次、僅在近正面時更新（轉頭時比例失真）
+          shapeFrameCount++;
+          if (shapeFrameCount % 30 === 0 && Math.abs(yaw) < 0.25) {
+            const r = classifyFromMediaPipe(lms, w, h);
+            if (r) cachedShape = r;
+          }
+
+          onResult({
+            leftEye, rightEye, noseBridge, yaw, pose, detected: true,
+            faceShape: cachedShape?.shape,
+            faceShapeConfidence: cachedShape?.confidence,
+          });
         }
       } catch {
         // skip frame
@@ -255,6 +269,41 @@ export async function initFaceDetector(
   }
 
   detect();
+}
+
+// ── AI 臉型辨識 ──────────────────────────────────────────────────────────────
+// classifyFaceShape 期望 68 點(dlib)格式；把 MediaPipe 478 點映射到它用到的索引
+import { classifyFaceShape, type FaceShape } from './face-shape-analyzer';
+
+let shapeFrameCount = 0;
+let cachedShape: { shape: FaceShape; confidence: number } | null = null;
+
+// dlib索引 ← MediaPipe索引（只映射 classifyFaceShape/calcYaw 會用到的點）
+const DLIB_TO_MP: Record<number, number> = {
+  0: 234, 16: 454,        // 下巴左右端（顴骨最寬處）
+  2: 227, 14: 447,        // 臉頰寬
+  5: 172, 11: 397,        // 下巴角
+  6: 150, 10: 379,        // 下顎線
+  7: 176, 9: 400,         // 近下巴
+  8: 152,                 // 下巴尖
+  19: 105, 24: 334,       // 左右眉
+  30: 1,                  // 鼻尖
+};
+
+function classifyFromMediaPipe(
+  lms: Array<{ x: number; y: number }>, w: number, h: number,
+): { shape: FaceShape; confidence: number } | null {
+  try {
+    const pts: Array<{ x: number; y: number }> = new Array(68);
+    for (const [dlibIdx, mpIdx] of Object.entries(DLIB_TO_MP)) {
+      const lm = lms[mpIdx as unknown as number];
+      if (!lm) return null;
+      pts[Number(dlibIdx)] = { x: lm.x * w, y: lm.y * h };  // 轉像素座標，比例才正確
+    }
+    return classifyFaceShape(pts as any);
+  } catch {
+    return null;
+  }
 }
 
 // 智慧防呆：偵測一張靜態圖片裡是否有人臉（用來擋「自拍臉」誤當眼鏡上傳）
