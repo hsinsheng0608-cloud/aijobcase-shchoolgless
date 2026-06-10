@@ -225,6 +225,10 @@ posRange?.addEventListener('input', () => {
 // Fullscreen toggle
 // 安卓部分機型進全螢幕會自動轉橫向 → 進入時鎖定「當下的方向」（直拿就維持直式），退出解鎖
 const btnFullscreen = document.getElementById('btn-fullscreen')!;
+// 「加到主畫面」(standalone) 模式本來就是全螢幕：iOS 按了無效、Android 多餘 → 直接隱藏按鈕
+if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
+  btnFullscreen.style.display = 'none';
+}
 btnFullscreen.addEventListener('click', async () => {
   if (!document.fullscreenElement) {
     const current = (screen.orientation?.type || '').startsWith('landscape') ? 'landscape' : 'portrait';
