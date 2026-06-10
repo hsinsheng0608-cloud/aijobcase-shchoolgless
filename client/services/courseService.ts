@@ -52,3 +52,21 @@ export async function getCourseStudents(courseId: string) {
   if (!data.success) throw new Error(data.error);
   return data.data;
 }
+
+/** 學生瀏覽全部開放課程（含 joined 旗標） */
+export async function getAllCourses(): Promise<Course[]> {
+  const res = await fetch(`${API_BASE}/courses/all`, { headers: getAuthHeaders() });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error);
+  return data.data;
+}
+
+/** 學生自助加入課程 */
+export async function joinCourse(courseId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/courses/${courseId}/join`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error);
+}

@@ -21,6 +21,7 @@ export interface Course {
   teacher_name?: string;
   student_count?: number;
   status?: string;
+  joined?: boolean;  // 學生瀏覽課程時：是否已加入
 }
 
 export interface Material {
