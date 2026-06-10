@@ -154,7 +154,7 @@ export default function FaceShapeRecommendation({ detectedFaceShape, onSelectIte
             <div className="flex flex-col items-center justify-center h-full text-gray-400">
               <IconPerson className="w-16 h-16 mb-4" />
               <p className="text-lg font-medium">請選擇臉型</p>
-              <p className="text-sm mt-1">或開啟攝影機自動辨識</p>
+              <p className="text-sm mt-1">{detectedFaceShape !== undefined && detectedFaceShape !== null ? '或由 AR 鏡頭自動辨識' : '點上方臉型即可查看推薦款式'}</p>
             </div>
           ) : loading ? (
             <div className="flex items-center justify-center h-full text-gray-400">載入中...</div>
