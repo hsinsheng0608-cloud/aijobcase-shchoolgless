@@ -6,10 +6,8 @@ import MaterialManagement from './components/MaterialManagement';
 import AIChatView from './components/AIChatView';
 import AdminArchitectureDoc from './components/AdminArchitectureDoc';
 import CourseList from './components/CourseList';
-import UsageView from './components/UsageView';
 import LoginView from './components/LoginView';
 import AdminUserManagement from './components/AdminUserManagement';
-import ARPracticeReport from './components/ARPracticeReport';
 import GlassesManagement from './components/GlassesManagement';
 import KnowledgeManagement from './components/KnowledgeManagement';
 import StudentStatusReport from './components/StudentStatusReport';
@@ -67,7 +65,6 @@ const App: React.FC = () => {
       case 'ai-chat': return (
         <AIChatView courseId={selectedCourseId || ''} onBack={() => setActiveTab('courses')} />
       );
-      case 'ar-report': return <ARPracticeReport />;
       case 'glasses-mgmt': return <GlassesManagement />;
       case 'knowledge-mgmt': return <KnowledgeManagement />;
       case 'student-status': return <StudentStatusReport />;
@@ -83,7 +80,6 @@ const App: React.FC = () => {
       case 'exams': return <QuizPage />;
       case 'admin': return <AdminArchitectureDoc />;
       case 'admin-users': return <AdminUserManagement />;
-      case 'usage': return <UsageView />;
       case 'manual': return <SystemManual userRole={user.role} />;
       default: return <Dashboard role={user.role} onNavigate={setActiveTab} />;
     }
