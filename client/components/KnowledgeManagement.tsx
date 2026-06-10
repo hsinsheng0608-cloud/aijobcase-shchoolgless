@@ -29,6 +29,7 @@ const KnowledgeManagement: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ course_id: '', category: '一般', question: '', answer: '' });
   const [error, setError] = useState('');
+  const [generating, setGenerating] = useState(false);
 
   const loadCourses = useCallback(async () => {
     const r = await api('/api/courses');
@@ -55,6 +56,28 @@ const KnowledgeManagement: React.FC = () => {
     setForm({ course_id: filterCourse || '', category: '一般', question: '', answer: '' });
     setError('');
     setShowForm(true);
+  };
+
+  // AI 從課程教材自動生成問答（需先在篩選器選定課程）
+  const handleGenerate = async () => {
+    if (!filterCourse) { alert('請先在上方「全部課程」下拉選單選定一門課程，AI 會讀該課程的教材生成問答。'); return; }
+    const count = parseInt(window.prompt('要生成幾筆問答？(1-30)', '10') || '', 10);
+    if (!count) return;
+    setGenerating(true);
+    try {
+      const r = await api('/api/knowledge/generate', {
+        method: 'POST',
+        body: JSON.stringify({ courseId: filterCourse, count }),
+      });
+      const d = await r.json();
+      if (!d.success) throw new Error(d.error || '生成失敗');
+      alert(`✅ 已生成 ${d.data.length} 筆問答，可逐筆編輯或刪除。`);
+      loadItems();
+    } catch (e: any) {
+      alert('生成失敗: ' + e.message);
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const openEdit = (item: QA) => {
@@ -99,10 +122,17 @@ const KnowledgeManagement: React.FC = () => {
           <h2 className="text-2xl font-bold text-slate-800">課業問答管理</h2>
           <p className="text-sm text-slate-500 mt-1">新增知識庫問答，學生提問時系統自動比對</p>
         </div>
-        <button onClick={openNew}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition">
-          + 新增問答
-        </button>
+        <div className="flex gap-2">
+          <button onClick={handleGenerate} disabled={generating}
+            title="選定課程後，AI 會讀該課程教材自動生成問答"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition disabled:opacity-50">
+            {generating ? 'AI 生成中…' : '✨ AI 從教材生成'}
+          </button>
+          <button onClick={openNew}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition">
+            + 新增問答
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
