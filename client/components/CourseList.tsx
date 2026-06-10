@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserRole, Course } from '../types';
 import { IconBook, IconUser, IconZap, IconGraduation, IconPlus } from './Icons';
-import { getCourses, createCourse, getAllCourses, joinCourse, updateCourse, deleteCourse } from '../services/courseService';
+import { getCourses, createCourse, getAllCourses, joinCourse, updateCourse, deleteCourse, generateCourseQa } from '../services/courseService';
 import { uploadMaterial, pollMaterialStatus, getMaterials, moveMaterial } from '../services/materialService';
 import { Material } from '../types';
 
@@ -43,7 +43,17 @@ const CourseList: React.FC<CourseListProps> = ({ userRole, onSelectCourse }) => 
         setCreateHint('課程已建立，教材上傳並建立 AI 索引中…');
         const { materialId } = await uploadMaterial(course.id, newFile);
         const result = await pollMaterialStatus(materialId);
-        setCreateHint(result.status === 'READY' ? '' : '教材處理失敗，可至教材管理重新上傳');
+        if (result.status === 'READY') {
+          // 新版後端會自動生成問答（result 帶 qa_status）；舊版後端則由前端補呼叫，
+          // 確保「建立課程＝問答就緒」，老師不用再跳去問答管理
+          if ((result as any).qa_status === undefined) {
+            setCreateHint('AI 正在從教材生成課後問答…');
+            try { await generateCourseQa(course.id, 8); } catch { /* 失敗不擋建立流程 */ }
+          }
+          setCreateHint('');
+        } else {
+          setCreateHint('教材處理失敗，可至教材管理重新上傳');
+        }
       }
       setCourses(prev => [course, ...prev]);
       setShowCreate(false);
@@ -263,6 +273,15 @@ const CourseManageModal: React.FC<{
     finally { setBusy(''); }
   };
 
+  const handleGenQa = async () => {
+    setBusy('AI 讀教材生成問答中…（約 10–30 秒）');
+    try {
+      const n = await generateCourseQa(course.id, 10);
+      alert(`✅ 已為「${course.name}」生成 ${n} 筆課後問答，學生在課業問答頁即可看到；可至「問答管理」逐筆編修。`);
+    } catch (e: any) { alert('生成失敗: ' + e.message); }
+    finally { setBusy(''); }
+  };
+
   const handleDelete = async () => {
     if (!window.confirm(`確定刪除課程「${course.name}」？\n課程的教材、AI 索引與學生選課紀錄會一併刪除，無法復原。`)) return;
     try {
@@ -315,6 +334,12 @@ const CourseManageModal: React.FC<{
               <button onClick={handleUpload} disabled={!upFile || !!busy}
                 className="bg-indigo-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold disabled:opacity-40 shrink-0">上傳</button>
             </div>
+            {mats.some(m => m.status === 'READY') && (
+              <button onClick={handleGenQa} disabled={!!busy}
+                className="w-full mt-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition disabled:opacity-40">
+                ✨ AI 讀教材生成課後問答（學生課業問答頁會看到）
+              </button>
+            )}
           </section>
 
           {/* 套用教材庫（教材管理中其他課程的項目，直接列出） */}

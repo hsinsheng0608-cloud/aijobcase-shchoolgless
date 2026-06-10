@@ -80,3 +80,15 @@ export async function deleteCourse(courseId: string): Promise<void> {
   const data = await res.json();
   if (!data.success) throw new Error(data.error);
 }
+
+/** AI 讀本課程教材生成課後問答（寫入課業問答） */
+export async function generateCourseQa(courseId: string, count = 10): Promise<number> {
+  const res = await fetch(`${API_BASE}/knowledge/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+    body: JSON.stringify({ courseId, count }),
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error);
+  return data.data.length;
+}
