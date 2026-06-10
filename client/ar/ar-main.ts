@@ -458,6 +458,16 @@ document.querySelectorAll('.glasses-btn').forEach((btn) => {
 });
 
 // Chat
+// 輕量 Markdown 渲染：AI 回覆的 **粗體**、* 條列、換行轉成 HTML（先轉義避免注入）
+function renderMd(text: string): string {
+  const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return esc
+    .replace(/^\s*[*•-]\s+/gm, '• ')                       // 行首 * 條列 → •
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')      // **粗體**
+    .replace(/(?<!\w)\*(?!\s)([^*\n]+?)\*(?!\w)/g, '$1')   // 殘留單星號去掉
+    .replace(/\n/g, '<br>');
+}
+
 function addChatMessage(
   text: string,
   role: 'user' | 'ai',
@@ -465,7 +475,8 @@ function addChatMessage(
 ) {
   const div = document.createElement('div');
   div.className = `chat-msg ${role}`;
-  div.textContent = text;
+  if (role === 'ai') div.innerHTML = renderMd(text);
+  else div.textContent = text;
   // 混合模式：罐頭訊息下方附「詳細問 AI」按鈕，點了才即時生成個人化回答
   if (action) {
     const btn = document.createElement('button');
@@ -522,8 +533,13 @@ function getArContext(): string {
   return parts.join('；');
 }
 
+// 防重複送出：AI 回覆中再按送出/Enter 一律忽略，避免同一句連發
+let chatSending = false;
+
 async function handleSendMessage(text: string) {
-  if (!text.trim()) return;
+  if (!text.trim() || chatSending) return;
+  chatSending = true;
+  btnSend.classList.add('opacity-40', 'pointer-events-none');
   chatInput.value = '';
 
   addChatMessage(text, 'user');
@@ -532,18 +548,23 @@ async function handleSendMessage(text: string) {
   const aiMsg = addChatMessage('', 'ai');
   let aiText = '';
 
-  await sendChatMessage(
-    text,
-    null,
-    (token) => {
-      aiText += token;
-      aiMsg.textContent = aiText;
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-    },
-    () => { /* done */ },
-    (err) => { aiMsg.textContent = `錯誤: ${err}`; },
-    getArContext()
-  );
+  try {
+    await sendChatMessage(
+      text,
+      null,
+      (token) => {
+        aiText += token;
+        aiMsg.innerHTML = renderMd(aiText);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      },
+      () => { /* done */ },
+      (err) => { aiMsg.textContent = `錯誤: ${err}`; },
+      getArContext()
+    );
+  } finally {
+    chatSending = false;
+    btnSend.classList.remove('opacity-40', 'pointer-events-none');
+  }
 }
 
 btnSend.addEventListener('click', () => handleSendMessage(chatInput.value));
@@ -879,9 +900,16 @@ async function makeLensTransparent(blob: Blob): Promise<Blob> {
         inner[y * w + x] = m;
       }
     }
-    // 鏡片內部 → 保留少量透光感（22% 不透明度），看得到臉
+    // 鏡片內部 → 大幅透明化（10%），戴上後眼睛清楚可見
     for (let i = 0; i < n; i++) {
-      if (inner[i]) d[i * 4 + 3] = Math.round(d[i * 4 + 3] * 0.22);
+      if (inner[i]) d[i * 4 + 3] = Math.round(d[i * 4 + 3] * 0.10);
+    }
+    // 去白邊（defringe）：去背殘留的半透明淺色光暈再壓低，鏡框邊緣才乾淨
+    for (let i = 0; i < n; i++) {
+      const o = i * 4, a = d[o + 3];
+      if (a > 0 && a < 230 && Math.min(d[o], d[o + 1], d[o + 2]) > 190) {
+        d[o + 3] = Math.round(a * 0.35);
+      }
     }
     ctx.putImageData(imgData, 0, 0);
     return await new Promise<Blob>((res) => cv.toBlob((b) => res(b || blob), 'image/png'));
