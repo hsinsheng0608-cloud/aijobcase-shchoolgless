@@ -29,6 +29,9 @@ const AdminUserManagement: React.FC = () => {
   const [errors, setErrors] = useState<Array<{ studentId: string; error: string }>>([]);
   const [message, setMessage] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newUser, setNewUser] = useState({ studentId: '', name: '', password: '', role: 'STUDENT' });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentUser = authService.getCurrentUser();
@@ -129,6 +132,35 @@ const AdminUserManagement: React.FC = () => {
     URL.revokeObjectURL(url);
   }
 
+  async function handleCreateOne(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newUser.studentId.trim() || !newUser.password.trim()) return;
+    setCreating(true);
+    try {
+      const r = await fetch(`${API_BASE}/auth/batch-create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ users: [{
+          studentId: newUser.studentId.trim(),
+          name: newUser.name.trim() || newUser.studentId.trim(),
+          password: newUser.password,
+          role: newUser.role,
+        }] }),
+      });
+      const d = await r.json();
+      if (d.success && d.data?.created?.length) {
+        setMessage(`✅ 已建立 ${d.data.created[0].student_id}（${newUser.role === 'ADMIN' ? '管理員' : newUser.role === 'TEACHER' ? '教師' : '學生'}）`);
+        setNewUser({ studentId: '', name: '', password: '', role: 'STUDENT' });
+        setShowCreate(false);
+        fetchUsers();
+      } else {
+        const err = d.data?.errors?.[0]?.error || d.error || '建立失敗';
+        alert('建立失敗: ' + err);
+      }
+    } catch { alert('網路錯誤'); }
+    finally { setCreating(false); }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -136,14 +168,54 @@ const AdminUserManagement: React.FC = () => {
           <h2 className="text-2xl font-black text-slate-800">用戶管理</h2>
           <p className="text-sm text-slate-500">管理系統用戶帳號</p>
         </div>
-        <button
-          onClick={() => setShowUpload(!showUpload)}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-          批次建立學生帳號
-        </button>
+        <div className="flex gap-2 flex-wrap justify-end">
+          <button
+            onClick={() => { setShowCreate(!showCreate); setShowUpload(false); }}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+            新增用戶
+          </button>
+          <button
+            onClick={() => { setShowUpload(!showUpload); setShowCreate(false); }}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+            批次建立學生帳號
+          </button>
+        </div>
       </div>
+
+      {/* 新增單一用戶（管理員可選任何身分；老師只能建學生） */}
+      {showCreate && (
+        <form onSubmit={handleCreateOne} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+          <h3 className="font-bold text-slate-800 text-sm">新增用戶</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <input value={newUser.studentId} onChange={e => setNewUser(v => ({ ...v, studentId: e.target.value }))}
+              placeholder="學號 / 帳號（必填）" required
+              className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+            <input value={newUser.name} onChange={e => setNewUser(v => ({ ...v, name: e.target.value }))}
+              placeholder="姓名（選填）"
+              className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+            <input value={newUser.password} onChange={e => setNewUser(v => ({ ...v, password: e.target.value }))}
+              placeholder="密碼（必填）" required
+              className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+            <select value={newUser.role} onChange={e => setNewUser(v => ({ ...v, role: e.target.value }))}
+              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none">
+              <option value="STUDENT">學生</option>
+              {currentUser?.role === UserRole.ADMIN && <option value="TEACHER">教師</option>}
+              {currentUser?.role === UserRole.ADMIN && <option value="ADMIN">管理員</option>}
+            </select>
+          </div>
+          {currentUser?.role !== UserRole.ADMIN && (
+            <p className="text-xs text-slate-400">教師身分只能建立學生帳號；建立教師/管理員請用 admin 登入。</p>
+          )}
+          <button type="submit" disabled={creating}
+            className="bg-emerald-600 text-white px-6 py-2 rounded-xl text-sm font-bold disabled:opacity-50">
+            {creating ? '建立中…' : '建立帳號'}
+          </button>
+        </form>
+      )}
 
       {/* Excel Upload Panel */}
       {showUpload && (
