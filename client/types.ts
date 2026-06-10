@@ -33,6 +33,7 @@ export interface Material {
   chunk_count?: number;
   error_message?: string;
   created_at?: string;
+  has_file?: boolean;  // 後端是否保存原始檔（供預覽/下載）
 }
 
 export interface ChatMessage {
