@@ -13,6 +13,7 @@ import ARPracticeReport from './components/ARPracticeReport';
 import GlassesManagement from './components/GlassesManagement';
 import KnowledgeManagement from './components/KnowledgeManagement';
 import StudentStatusReport from './components/StudentStatusReport';
+import MyGlassesPage from './components/MyGlassesPage';
 import FaceShapeRecommendation from './components/FaceShapeRecommendation';
 import QuizPage from './components/QuizPage';
 import SystemManual from './components/SystemManual';
@@ -70,6 +71,7 @@ const App: React.FC = () => {
       case 'glasses-mgmt': return <GlassesManagement />;
       case 'knowledge-mgmt': return <KnowledgeManagement />;
       case 'student-status': return <StudentStatusReport />;
+      case 'my-glasses': return <MyGlassesPage />;
       case 'face-recommend': return (
         <FaceShapeRecommendation
           onSelectItem={(item) => {

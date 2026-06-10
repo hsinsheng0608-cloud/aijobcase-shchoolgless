@@ -38,6 +38,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentRole, userName, activeTab, set
     // AR 視光
     { id: 'ar-practice', label: 'AR 模擬練習', Icon: IconEye, section: 'AR 視光', roles: [UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT], external: '/ar/index.html' },
     { id: 'face-recommend', label: '臉型眼鏡推薦', Icon: IconEye, section: 'AR 視光', roles: [UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT] },
+    { id: 'my-glasses', label: '我的眼鏡', Icon: IconEye, section: 'AR 視光', roles: [UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT] },
     { id: 'glasses-mgmt', label: '眼鏡素材管理', Icon: IconFile, section: 'AR 視光', roles: [UserRole.TEACHER, UserRole.ADMIN] },
     // 其他
     { id: 'manual', label: '操作說明', Icon: IconInfo, section: '其他', roles: [UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT] },
