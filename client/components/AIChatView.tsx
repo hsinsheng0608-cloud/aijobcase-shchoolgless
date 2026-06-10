@@ -231,7 +231,13 @@ const AIChatView: React.FC<AIChatViewProps> = ({ courseId, onBack }) => {
             <svg className="w-12 h-12 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            <p className="text-sm">{search ? `找不到「${search}」相關問答` : '此分類尚無問答'}</p>
+            <p className="text-sm">{search ? `找不到「${search}」相關問答` : '此課程尚無問答'}</p>
+            {!search && (
+              <p className="text-xs text-slate-400/80 mt-1 text-center leading-relaxed px-6">
+                老師上傳教材後，系統會自動生成課後問答（約需 1 分鐘）。<br />
+                若仍未出現，教師可至「問答管理」按「✨ AI 從教材生成」或手動新增。
+              </p>
+            )}
           </div>
         )}
 

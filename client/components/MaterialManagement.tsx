@@ -51,6 +51,16 @@ const MaterialManagement: React.FC<MaterialManagementProps> = ({ courseId }) => 
     }
   }, [effectiveCourseId]);
 
+  // 教材處理中或 AI 問答生成中 → 每 5 秒刷新，讓老師看到即時狀態
+  useEffect(() => {
+    const pending = materials.some(m => m.status === 'PROCESSING' || m.qa_status === 'GENERATING');
+    if (!pending || !effectiveCourseId) return;
+    const t = setInterval(() => {
+      getMaterials(effectiveCourseId).then(setMaterials).catch(() => {});
+    }, 5000);
+    return () => clearInterval(t);
+  }, [materials, effectiveCourseId]);
+
   useEffect(() => {
     if (!courseId) {
       fetch(`${API_BASE}/courses`, { headers: getAuthHeaders() })
@@ -193,6 +203,23 @@ const MaterialManagement: React.FC<MaterialManagementProps> = ({ courseId }) => 
                   }`}>
                     {mat.status === 'READY' ? `已就緒 (${mat.chunk_count || 0} chunks)` : mat.status === 'PROCESSING' ? '建立索引中...' : '處理失敗'}
                   </span>
+                  {/* 自動問答生成狀態（上傳後 AI 會接著整理課後問答） */}
+                  {mat.qa_status === 'GENERATING' && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-violet-100 text-violet-700 animate-pulse">
+                      AI 整理問答中…
+                    </span>
+                  )}
+                  {mat.qa_status === 'READY' && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-violet-100 text-violet-700">
+                      問答 {mat.qa_count || 0} 筆
+                    </span>
+                  )}
+                  {mat.qa_status === 'FAILED' && (
+                    <span title={mat.qa_error || '問答生成失敗，可至問答管理手動生成'}
+                      className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-red-100 text-red-700 cursor-help">
+                      問答生成失敗
+                    </span>
+                  )}
                 </div>
               </div>
               {mat.has_file && (

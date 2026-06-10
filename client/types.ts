@@ -35,6 +35,9 @@ export interface Material {
   error_message?: string;
   created_at?: string;
   has_file?: boolean;  // 後端是否保存原始檔（供預覽/下載）
+  qa_status?: 'GENERATING' | 'READY' | 'FAILED' | null;  // 自動問答生成狀態
+  qa_count?: number;
+  qa_error?: string;
 }
 
 export interface ChatMessage {
