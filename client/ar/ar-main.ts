@@ -108,13 +108,7 @@ if (!userInfo) {
   window.location.href = '/';
 } else {
   userName.textContent = userInfo.name;
-  // Hide "返回系統" link for students (AR is their main page)
-  const backLink = document.querySelector('#top-bar a[href="/"]') as HTMLElement;
-  if (userInfo.role === 'STUDENT' && backLink) {
-    backLink.innerHTML = `
-      <span class="text-sm cursor-pointer" onclick="localStorage.removeItem('edumind_token');localStorage.removeItem('edumind_user');window.location.href='/';">登出</span>
-    `;
-  }
+  // 學生現在也是從主系統進入 AR，統一顯示「返回系統」（舊版學生直落 AR 才顯示登出）
 }
 
 // Initialize
