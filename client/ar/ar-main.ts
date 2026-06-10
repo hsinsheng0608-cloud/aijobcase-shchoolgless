@@ -533,6 +533,40 @@ function getArContext(): string {
   return parts.join('；');
 }
 
+// 從 AI 回覆文字中找出有被提到的型錄款式（用「｜」分段後的特徵詞比對，避免品牌詞誤配）
+function findMentionedStyles(text: string): string[] {
+  const hits: string[] = [];
+  for (const g of catalogItems) {
+    const parts = g.name.split(/[｜|]/).map(s => s.trim()).filter(s => s.length >= 3);
+    const distinct = parts.length > 1 ? parts.slice(1) : parts;  // 跳過品牌前綴段
+    if (distinct.some(p => text.includes(p))) hits.push(g.name);
+  }
+  return Array.from(new Set(hits)).slice(0, 3);
+}
+
+// 在 AI 訊息下方加「試戴」按鈕列：點了直接套用，不必再打字回覆
+function attachTryOnButtons(msgEl: HTMLElement, names: string[]) {
+  const row = document.createElement('div');
+  row.className = 'mt-2 flex flex-wrap gap-1.5';
+  names.forEach((name) => {
+    const short = name.replace(/三麗鷗夢幻隊[▪︎\s]*/, '').replace(/｜[^｜]*$/, '').trim().slice(0, 14) || name.slice(0, 14);
+    const b = document.createElement('button');
+    b.textContent = `👓 試戴 ${short}`;
+    b.className = 'px-3 py-1.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition';
+    b.addEventListener('click', () => {
+      const ok = applyGlassesByName(name);
+      row.querySelectorAll('button').forEach(x => { (x as HTMLButtonElement).disabled = true; x.classList.add('opacity-40'); });
+      addChatMessage(
+        ok ? `✅ 已為你套用「${short}」！可用上方滑桿調整大小與高低。`
+           : '⚠️ 套用失敗，請從上方款式列手動選擇。',
+        'ai',
+      );
+    });
+    row.appendChild(b);
+  });
+  msgEl.appendChild(row);
+}
+
 // AI 同意套用協議：[APPLY:款式全名] → 找到對應款式按鈕並真的套用
 function applyGlassesByName(name: string): boolean {
   const target = name.trim();
@@ -572,7 +606,7 @@ async function handleSendMessage(text: string) {
         chatMessages.scrollTop = chatMessages.scrollHeight;
       },
       () => {
-        // 完成：解析套用指令 → 真的幫使用者戴上
+        // 完成：若 AI 帶了 [APPLY] 指令（使用者已口頭同意）→ 直接套用
         const m = aiText.match(/\[APPLY:([^\]]+)\]/);
         if (m) {
           aiMsg.innerHTML = renderMd(aiText.replace(m[0], '').trim());
@@ -582,7 +616,11 @@ async function handleSendMessage(text: string) {
                : `⚠️ 找不到「${m[1].trim()}」這個款式，請從上方款式列手動選擇。`,
             'ai',
           );
+          return;
         }
+        // 沒有指令但回覆中有推薦款式 → 直接附「👓 試戴」按鈕，點了就套用（免打字確認）
+        const mentioned = findMentionedStyles(aiText);
+        if (mentioned.length > 0) attachTryOnButtons(aiMsg, mentioned);
       },
       (err) => { aiMsg.textContent = `錯誤: ${err}`; },
       getArContext()
