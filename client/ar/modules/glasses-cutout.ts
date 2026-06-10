@@ -13,67 +13,6 @@ export function fileToImage(file: Blob): Promise<HTMLImageElement> {
   });
 }
 
-/** 背景色清除：用「被去背模型移除的區域」學出背景顏色群（k-means），
- *  把鏡框內顏色相同的殘留（透過鏡片拍到的桌面）一併變透明 */
-async function removeBgColorRemnants(originalBlob: Blob, cutBlob: Blob): Promise<Blob> {
-  try {
-    const [oImg, cImg] = await Promise.all([fileToImage(originalBlob), fileToImage(cutBlob)]);
-    const w = cImg.naturalWidth, h = cImg.naturalHeight;
-    if (!w || !h || oImg.naturalWidth !== w || oImg.naturalHeight !== h) return cutBlob;
-    const cvO = document.createElement('canvas'); cvO.width = w; cvO.height = h;
-    const cvC = document.createElement('canvas'); cvC.width = w; cvC.height = h;
-    const ctxO = cvO.getContext('2d', { willReadFrequently: true })!;
-    const ctxC = cvC.getContext('2d', { willReadFrequently: true })!;
-    ctxO.drawImage(oImg, 0, 0); ctxC.drawImage(cImg, 0, 0);
-    const od = ctxO.getImageData(0, 0, w, h).data;
-    const cData = ctxC.getImageData(0, 0, w, h);
-    const cd = cData.data, n = w * h;
-
-    // 1) 取樣被移除的背景像素（cut alpha=0 處的原圖顏色）
-    const samples: number[][] = [];
-    const step = Math.max(1, Math.floor(n / 6000));
-    for (let i = 0; i < n; i += step) {
-      if (cd[i * 4 + 3] <= 8) samples.push([od[i * 4], od[i * 4 + 1], od[i * 4 + 2]]);
-    }
-    if (samples.length < 50) return cutBlob;
-
-    // 2) 簡易 k-means（k=3, 6 輪）
-    const K = 3;
-    let centers = [0, Math.floor(samples.length / 2), samples.length - 1].map(i => [...samples[i]]);
-    const assign = new Array(samples.length).fill(0);
-    const d2 = (a: number[], b: number[]) => (a[0]-b[0])**2 + (a[1]-b[1])**2 + (a[2]-b[2])**2;
-    for (let it = 0; it < 6; it++) {
-      for (let i = 0; i < samples.length; i++) {
-        let bi = 0, bd = Infinity;
-        for (let k = 0; k < K; k++) { const dd = d2(samples[i], centers[k]); if (dd < bd) { bd = dd; bi = k; } }
-        assign[i] = bi;
-      }
-      const sum = Array.from({ length: K }, () => [0, 0, 0, 0]);
-      for (let i = 0; i < samples.length; i++) { const k = assign[i]; sum[k][0]+=samples[i][0]; sum[k][1]+=samples[i][1]; sum[k][2]+=samples[i][2]; sum[k][3]++; }
-      for (let k = 0; k < K; k++) if (sum[k][3] > 0) centers[k] = [sum[k][0]/sum[k][3], sum[k][1]/sum[k][3], sum[k][2]/sum[k][3]];
-    }
-    // 每群容差 = 平均距離*1.6 + 14
-    const tol = centers.map((c, k) => {
-      let s = 0, cnt = 0;
-      for (let i = 0; i < samples.length; i++) if (assign[i] === k) { s += Math.sqrt(d2(samples[i], c)); cnt++; }
-      return cnt ? (s / cnt) * 1.6 + 14 : 0;
-    });
-
-    // 3) 不透明像素若顏色落在背景色群 → 視為鏡片殘留，變近透明
-    for (let i = 0; i < n; i++) {
-      const o = i * 4, al = cd[o + 3];
-      if (al <= 8) continue;
-      const px = [cd[o], cd[o + 1], cd[o + 2]];
-      for (let k = 0; k < K; k++) {
-        if (tol[k] > 0 && Math.sqrt(d2(px, centers[k])) < tol[k]) { cd[o + 3] = Math.round(al * 0.06); break; }
-      }
-    }
-    ctxC.putImageData(cData, 0, 0);
-    return await new Promise<Blob>(res => cvC.toBlob(b => res(b || cutBlob), 'image/png'));
-  } catch { return cutBlob; }
-}
-
-
 // 行動裝置記憶體有限：全精度 isnet 會讓 iOS WebKit 爆記憶體 →「重複發生問題」當機
 const IS_MOBILE = /iPhone|iPad|Android/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1;
 
@@ -109,10 +48,8 @@ export async function cutoutGlasses(
       else onStatus('AI 去背中…');
     },
   });
-  onStatus?.('清除鏡片殘留…');
-  const colorCleaned = await removeBgColorRemnants(source, removed);
   onStatus?.('裁切與鏡片透明化…');
-  const cropped = await cropToContent(colorCleaned);
+  const cropped = await cropToContent(removed);
   return makeLensTransparent(cropped);
 }
 
