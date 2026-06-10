@@ -215,6 +215,12 @@
     .mobile-fab { display: none !important; }
 }
 
+/* ⋯更多 選單打開時：模式切換列降層，避免蓋住選單項目 */
+body.more-menu-open #mode-selector {
+    z-index: 10 !important;
+    pointer-events: none;
+}
+
 /* ── 一鍵淨空畫面（只留相機與還原鈕）── */
 body.ui-clean #top-bar,
 body.ui-clean #mode-selector,

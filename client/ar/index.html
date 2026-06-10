@@ -650,12 +650,18 @@
             const moreBtn  = document.getElementById('btn-more');
             const moreMenu = document.getElementById('more-menu');
             if (!moreBtn || !moreMenu) return;
-            const closeMenu = () => { moreMenu.classList.add('hidden'); moreBtn.setAttribute('aria-expanded', 'false'); };
+            const closeMenu = () => {
+                moreMenu.classList.add('hidden');
+                moreBtn.setAttribute('aria-expanded', 'false');
+                document.body.classList.remove('more-menu-open');
+            };
             moreBtn.addEventListener('click', function (e) {
                 e.stopPropagation();
                 const willOpen = moreMenu.classList.contains('hidden');
                 moreMenu.classList.toggle('hidden');
                 moreBtn.setAttribute('aria-expanded', String(willOpen));
+                // 選單打開時把模式切換列降層，避免浮在選單上擋住項目
+                document.body.classList.toggle('more-menu-open', willOpen);
             });
             // 點選單內任一項或點外面都收起
             moreMenu.addEventListener('click', closeMenu);
