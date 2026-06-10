@@ -28,6 +28,7 @@ const AdminUserManagement: React.FC = () => {
   const [createdAccounts, setCreatedAccounts] = useState<CreatedAccount[]>([]);
   const [errors, setErrors] = useState<Array<{ studentId: string; error: string }>>([]);
   const [message, setMessage] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentUser = authService.getCurrentUser();
@@ -232,47 +233,64 @@ const AdminUserManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Existing Users Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-black tracking-widest">
-            <tr>
-              <th className="px-6 py-4">使用者</th>
-              <th className="px-6 py-4">學號</th>
-              <th className="px-6 py-4">角色</th>
-              <th className="px-6 py-4">狀態</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {users.map((u) => (
-              <tr key={u.id} className="hover:bg-slate-50/50">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center"><IconUser className="w-4 h-4 text-slate-400" /></div>
-                    <span className="text-sm font-bold text-slate-700">{u.name}</span>
+      {/* 用戶清單：每位一列，點擊向下展開詳細資料（手機/桌機通用） */}
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm divide-y divide-slate-100">
+        {users.map((u) => {
+          const open = expandedId === u.id;
+          return (
+            <div key={u.id}>
+              <button
+                type="button"
+                onClick={() => setExpandedId(open ? null : u.id)}
+                className={`w-full flex items-center gap-3 px-4 md:px-6 py-3.5 text-left transition ${open ? 'bg-indigo-50/50' : 'hover:bg-slate-50/60'}`}
+              >
+                <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                  <IconUser className="w-4 h-4 text-slate-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-slate-700 truncate">{u.name}</p>
+                  <p className="text-xs text-slate-400 truncate">{u.student_id}</p>
+                </div>
+                <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap ${
+                  u.role === 'ADMIN' ? 'bg-purple-100 text-purple-600' :
+                  u.role === 'TEACHER' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-600'
+                }`}>{u.role === 'ADMIN' ? '管理員' : u.role === 'TEACHER' ? '教師' : '學生'}</span>
+                <svg className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {open && (
+                <div className="px-4 md:px-6 pb-4 pt-1 bg-indigo-50/30">
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 text-sm">
+                    <div>
+                      <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest">學號 / 帳號</p>
+                      <p className="text-slate-700 font-mono">{u.student_id}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest">狀態</p>
+                      <span className={`inline-block mt-0.5 text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                        u.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
+                      }`}>{u.status === 'ACTIVE' ? '啟用' : '停用'}</span>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest">角色</p>
+                      <p className="text-slate-700">{u.role === 'ADMIN' ? '管理員' : u.role === 'TEACHER' ? '教師' : '學生'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest">建立時間</p>
+                      <p className="text-slate-700">{u.created_at ? new Date(u.created_at).toLocaleDateString('zh-TW') : '—'}</p>
+                    </div>
                   </div>
-                </td>
-                <td className="px-6 py-4 text-sm text-slate-500">{u.student_id}</td>
-                <td className="px-6 py-4">
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                    u.role === 'ADMIN' ? 'bg-purple-100 text-purple-600' :
-                    u.role === 'TEACHER' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-600'
-                  }`}>{u.role === 'ADMIN' ? '管理員' : u.role === 'TEACHER' ? '教師' : '學生'}</span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                    u.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
-                  }`}>{u.status === 'ACTIVE' ? '啟用' : '停用'}</span>
-                </td>
-              </tr>
-            ))}
-            {users.length === 0 && (
-              <tr><td colSpan={4} className="px-6 py-12 text-center text-slate-400">尚無用戶資料</td></tr>
-            )}
-          </tbody>
-        </table>
-        </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {users.length === 0 && (
+          <div className="px-6 py-12 text-center text-slate-400">尚無用戶資料</div>
+        )}
       </div>
     </div>
   );
