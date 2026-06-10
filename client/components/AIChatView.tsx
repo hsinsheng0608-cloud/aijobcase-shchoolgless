@@ -192,8 +192,8 @@ const AIChatView: React.FC<AIChatViewProps> = ({ courseId, onBack }) => {
             )}
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-base md:text-lg font-bold text-slate-800 whitespace-nowrap">課業問答</h2>
-                <span className="hidden sm:inline text-xs bg-indigo-100 text-indigo-600 px-2.5 py-0.5 rounded-full font-medium whitespace-nowrap">課後複習</span>
+                <h2 className="text-base md:text-lg font-bold text-slate-800 whitespace-nowrap">課後複習</h2>
+                <span className="hidden sm:inline text-xs bg-indigo-100 text-indigo-600 px-2.5 py-0.5 rounded-full font-medium whitespace-nowrap">題庫＋問 AI</span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5 truncate">共 {items.length} 個問答 · 點擊展開解答</p>
             </div>

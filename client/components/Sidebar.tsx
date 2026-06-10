@@ -28,7 +28,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentRole, userName, activeTab, set
     { id: 'dashboard', label: '數據儀表板', Icon: IconDashboard, section: '', roles: [UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT] },
     { id: 'courses', label: '我的課程', Icon: IconBook, section: '', roles: [UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT] },
     // 學習
-    { id: 'ai-chat', label: '課業問答', Icon: IconChat, section: '學習', roles: [UserRole.TEACHER, UserRole.STUDENT] },
+    { id: 'ai-chat', label: '課後複習', Icon: IconChat, section: '學習', roles: [UserRole.TEACHER, UserRole.STUDENT] },
     { id: 'exams', label: '測驗系統', Icon: IconZap, section: '學習', roles: [UserRole.TEACHER, UserRole.STUDENT] },
     // 教學管理（老師/管理員）
     { id: 'materials', label: '教材管理', Icon: IconFile, section: '教學管理', roles: [UserRole.TEACHER, UserRole.ADMIN] },

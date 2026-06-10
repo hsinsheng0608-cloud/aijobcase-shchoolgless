@@ -277,7 +277,7 @@ const CourseManageModal: React.FC<{
     setBusy('AI 讀教材生成問答中…（約 10–30 秒）');
     try {
       const n = await generateCourseQa(course.id, 10);
-      alert(`✅ 已為「${course.name}」生成 ${n} 筆課後問答，學生在課業問答頁即可看到；可至「問答管理」逐筆編修。`);
+      alert(`✅ 已為「${course.name}」生成 ${n} 筆課後問答，學生在「課後複習」頁即可看到；可至「問答管理」逐筆編修。`);
     } catch (e: any) { alert('生成失敗: ' + e.message); }
     finally { setBusy(''); }
   };
@@ -337,7 +337,7 @@ const CourseManageModal: React.FC<{
             {mats.some(m => m.status === 'READY') && (
               <button onClick={handleGenQa} disabled={!!busy}
                 className="w-full mt-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition disabled:opacity-40">
-                ✨ AI 讀教材生成課後問答（學生課業問答頁會看到）
+                ✨ AI 讀教材生成課後問答（學生「課後複習」頁會看到）
               </button>
             )}
           </section>

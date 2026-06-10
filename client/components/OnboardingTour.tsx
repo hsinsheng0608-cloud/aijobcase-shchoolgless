@@ -13,7 +13,7 @@ const slides = [
   },
   {
     emoji: '💬',
-    title: '課業問答',
+    title: '課後複習',
     desc: '隨時向 AI 提問，知識庫自動比對最相關的解答，找不到再由 AI 即時回答',
     bg: 'from-blue-500 to-indigo-600',
   },
