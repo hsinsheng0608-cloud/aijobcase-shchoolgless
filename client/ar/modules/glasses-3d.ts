@@ -95,15 +95,29 @@ export class Glasses3D {
     this.frontMesh = new THREE.Mesh(frontGeo, this.frontMat);
     g.add(this.frontMesh);
 
-    // 鏡腳 stub：獨立 armsGroup 以便依模式整體平移
+    // 鏡腳 stub：獨立 armsGroup 以便依模式整體平移／依貼圖重建
     this.armsGroup = new THREE.Group();
     g.add(this.armsGroup);
-    const attachY = planeH / 2 - FRONT.templeAttachYRatio * planeH;
     this.templeMatRight = new THREE.MeshBasicMaterial({ color: STUB.color, transparent: true, opacity: 1 });
     this.templeMatLeft  = new THREE.MeshBasicMaterial({ color: STUB.color, transparent: true, opacity: 1 });
+    this.buildArms(FRONT.frameOuterPD, planeH / 2 - FRONT.templeAttachYRatio * planeH);
+
+    return g;
+  }
+
+  /**
+   * 重建左右鏡腳：attachX = 鉸鏈距中心水平距離、attachY = 鉸鏈高度（臉部單位）
+   * 內建眼鏡用預設值；上傳/型錄眼鏡依「實際貼圖尺寸」計算後重建，鏡腳才接得上
+   */
+  private buildArms(attachX: number, attachY: number) {
+    // 清掉舊鏡腳並釋放 geometry
+    for (const child of [...this.armsGroup.children]) {
+      this.armsGroup.remove(child);
+      (child as THREE.Mesh).geometry?.dispose();
+    }
     const buildStub = (side: 1 | -1) => {
       const stubMat = side > 0 ? this.templeMatRight : this.templeMatLeft;
-      const x0     = side * FRONT.frameOuterPD;
+      const x0     = side * attachX;
       const xEnd   = x0 - side * STUB.inward;
       const xStart = x0 - side * 0.04;
       const yEnd   = attachY - STUB.bend;
@@ -126,8 +140,6 @@ export class Glasses3D {
     };
     buildStub(1);
     buildStub(-1);
-
-    return g;
   }
 
   setColor(hex: number) {
@@ -143,12 +155,23 @@ export class Glasses3D {
    * - scale.y × (FRONT.imgW/FRONT.imgH) 修正 1000×1000 PNG 在 2:1 plane 上的比例
    * - position.y 讓鏡框 hinge (~37.5% from top) 對齊 arm attachY，消除斷層
    */
-  setCatalogTexture(imageUrl: string, hideTemples = false) {
+  setCatalogTexture(imageUrl: string, _hideTemples = false) {
     const tex = new THREE.TextureLoader().load(imageUrl, (t) => {
       // 依「實際圖片長寬比」設定 plane 高度，避免眼鏡被拉長/壓扁
       const iw = (t.image && t.image.width) || 1;
       const ih = (t.image && t.image.height) || 1;
-      this.frontMesh.scale.y = (FRONT.imgW / FRONT.imgH) * (ih / iw);
+      const scaleY = (FRONT.imgW / FRONT.imgH) * (ih / iw);
+      this.frontMesh.scale.y = scaleY;
+
+      // 依實際顯示尺寸重建鏡腳：上傳圖經裁切後鏡框幾乎填滿整張圖，
+      // 鉸鏈 ≈ 圖片左右外緣、距頂部約 32% 高度處
+      const planeW = FRONT.imgW / FRONT.pdPx;
+      const planeH = FRONT.imgH / FRONT.pdPx;
+      const displayH = planeH * scaleY;
+      const attachX = (planeW / 2) * 0.96;
+      const attachY = displayH / 2 - 0.32 * displayH;
+      this.buildArms(attachX, attachY);
+      this.armsGroup.visible = true;
     });
     tex.colorSpace = THREE.SRGBColorSpace;
     if (this.frontMat.map && this.frontMat.map !== this.defaultTex) {
@@ -159,9 +182,7 @@ export class Glasses3D {
     this.frontMesh.scale.y    = FRONT.imgW / FRONT.imgH;  // 暫定，onLoad 後依實際比例修正
     this.frontMesh.position.y = 0;
     this.frontMesh.visible    = true;
-    this.armsGroup.position.y = -0.10;
-    // 只有「使用者自己拍/上傳」的正面照才藏假鏡腳（幾乎對不準）；內建/型錄樣本維持顯示
-    this.armsGroup.visible    = !hideTemples;
+    this.armsGroup.position.y = 0;  // 鉸鏈位置已在 onLoad 重建時算準，不再整體平移
   }
 
   /** 切回內建貼圖（black/tortoise/gold 等） */
@@ -175,7 +196,10 @@ export class Glasses3D {
     this.frontMesh.position.y = 0;
     this.frontMesh.visible    = true;
     this.armsGroup.position.y = 0;
-    this.armsGroup.visible    = true;  // 內建眼鏡有對好的鏡腳，恢復顯示
+    this.armsGroup.visible    = true;
+    // 還原內建眼鏡的預設鉸鏈位置
+    const planeH = FRONT.imgH / FRONT.pdPx;
+    this.buildArms(FRONT.frameOuterPD, planeH / 2 - FRONT.templeAttachYRatio * planeH);
   }
 
   resize() {
