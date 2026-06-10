@@ -6,7 +6,7 @@
 import { initFaceDetector, detectFaceInImage, resumeCamera, releaseCamera, type FaceResult } from './modules/face-detector';
 import { LensRenderer, type LensColor } from './modules/lens-renderer';
 import { registerGlassesUrl } from './modules/glasses-assets';
-import { cutoutGlasses } from './modules/glasses-cutout';
+import { cutoutGlasses, myGlassesAuth } from './modules/glasses-cutout';
 import { Glasses3D } from './modules/glasses-3d';
 import { GuidanceController } from './modules/guidance-controller';
 import { VoiceInput } from './modules/voice-input';
@@ -702,7 +702,8 @@ async function handleSendMessage(text: string) {
 
 btnSend.addEventListener('click', () => handleSendMessage(chatInput.value));
 chatInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') handleSendMessage(chatInput.value);
+  // !e.isComposing：中文輸入法選字按 Enter 不誤送半成品
+  if (e.key === 'Enter' && !e.isComposing) handleSendMessage(chatInput.value);
 });
 
 // Voice
@@ -1359,11 +1360,18 @@ async function loadGlassesCatalog() {
       catalogItems = items;
       buildGlassesButtons(items);
       // 從「我的眼鏡」頁跳轉：?applyMine=<id> 優先直接套用該副；否則還原上次選的款式
-      const mine = new URLSearchParams(location.search).get('applyMine');
+      const params = new URLSearchParams(location.search);
+      const mine = params.get('applyMine');
+      const cat = params.get('applyCatalog');
       if (mine) {
         modeGlasses.click();
         usingCatalogGlasses = true;
         glasses3DScene.setCatalogTexture(`${API_ORIGIN}/api/my-glasses/${mine}/image`, true);
+      } else if (cat) {
+        // 從臉型推薦頁點選款式跳轉：套用該型錄眼鏡
+        modeGlasses.click();
+        const btn = document.querySelector<HTMLElement>(`.glasses-btn[data-glasses="${cat}"]`);
+        if (btn) btn.click();
       } else {
         const st = getArState();
         if (st.glassesId) {

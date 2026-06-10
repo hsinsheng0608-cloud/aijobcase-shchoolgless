@@ -692,7 +692,7 @@
             {
                 el: '#top-bar',
                 title: '頂部功能列',
-                desc: '可返回主系統，右側按鈕提供視光數據、我的試戴照、臉型推薦、全螢幕等功能，也可點「?」隨時重新啟動導覽。',
+                desc: '可返回主系統，右側按鈕提供視光數據、臉型推薦、全螢幕等常用功能；其餘（我的眼鏡收藏、儲存試戴照、我的試戴照、操作導覽）收在「⋯」更多選單裡。',
                 pos: 'bottom'
             },
             {
@@ -773,7 +773,9 @@
             if (step.expandPanel) expandPanel(step.expandPanel);
 
             var target = document.querySelector(step.el);
-            if (!target) { advanceTour(1); return; }
+            // 不存在或不可見（手機收合/隱藏的元素）→ 跳過該步，避免高亮框跑到畫面外或角落
+            var visible = target && target.offsetParent !== null && target.getBoundingClientRect().width > 0;
+            if (!visible) { advanceTour(tourDir || 1); return; }
 
             var rect = target.getBoundingClientRect();
             var pad = 8;
@@ -791,10 +793,12 @@
             positionTip(rect, step.pos);
         }
 
+        var tourDir = 1;
         function advanceTour(dir) {
+            tourDir = dir;  // 記住方向，讓 showTourStep 跳過不可見步驟時延續同方向
             tourStep += dir;
             if (tourStep >= TOUR_STEPS.length) { endTour(); return; }
-            if (tourStep < 0) tourStep = 0;
+            if (tourStep < 0) { tourStep = 0; tourDir = 1; }
             showTourStep(tourStep);
         }
 

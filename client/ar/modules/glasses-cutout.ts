@@ -194,7 +194,7 @@ async function cropToContent(blob: Blob): Promise<Blob> {
 }
 
 // 私人眼鏡 API 用的 auth header
-function myGlassesAuth(): Record<string, string> {
+export function myGlassesAuth(): Record<string, string> {
   const t = localStorage.getItem('edumind_token');
   return t ? { Authorization: `Bearer ${t}` } : {};
 }

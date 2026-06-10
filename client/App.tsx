@@ -75,7 +75,8 @@ const App: React.FC = () => {
       case 'face-recommend': return (
         <FaceShapeRecommendation
           onSelectItem={(item) => {
-            if (item) window.open('/ar/index.html', '_blank');
+            // 套用所選款式並重用同一個 AR 分頁（避免每點一張就開新分頁）
+            if (item) window.open(`/ar/index.html?applyCatalog=${item.id}`, 'edumind_ar');
           }}
         />
       );
@@ -96,7 +97,11 @@ const App: React.FC = () => {
         currentRole={user.role}
         userName={user.name}
         activeTab={activeTab}
-        setActiveTab={(tab) => { setActiveTab(tab); setSidebarOpen(false); }}
+        setActiveTab={(tab) => {
+          // 從側欄進「教材管理 / 課後複習」時清掉殘留課程，才會顯示課程切換器 / 全部問答
+          if (tab === 'materials' || tab === 'ai-chat') setSelectedCourseId(null);
+          setActiveTab(tab); setSidebarOpen(false);
+        }}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
