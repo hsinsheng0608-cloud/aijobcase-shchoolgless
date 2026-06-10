@@ -839,10 +839,31 @@ const myGlassesInput = document.getElementById('my-glasses-input') as HTMLInputE
 const myGlassesToast = document.getElementById('my-glasses-toast');
 const myGlassesToastText = document.getElementById('my-glasses-toast-text');
 
-// 去背（用較小較快的 quint8 模型 + 進度顯示）→ 再裁切掉四周透明空白，讓眼鏡填滿
-async function removeBg(source: Blob): Promise<Blob> {
+// 行動裝置記憶體有限：全精度 isnet 會讓 iOS WebKit 爆記憶體 →「重複發生問題」當機
+const IS_MOBILE = /iPhone|iPad|Android/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1;
+
+// 去背前先把照片縮到合理尺寸：省記憶體、快很多，去背品質幾乎無差
+async function downscaleForRemoval(source: Blob, maxDim = 1400): Promise<Blob> {
+  try {
+    const img = await fileToImage(source);
+    const w = img.naturalWidth, h = img.naturalHeight;
+    if (!w || !h || Math.max(w, h) <= maxDim) return source;
+    const s = maxDim / Math.max(w, h);
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(w * s); cv.height = Math.round(h * s);
+    const ctx = cv.getContext('2d');
+    if (!ctx) return source;
+    ctx.drawImage(img, 0, 0, cv.width, cv.height);
+    return await new Promise<Blob>((res) => cv.toBlob((b) => res(b || source), 'image/png'));
+  } catch { return source; }
+}
+
+// 去背 → 再裁切掉四周透明空白，讓眼鏡填滿
+async function removeBg(rawSource: Blob): Promise<Blob> {
+  const source = await downscaleForRemoval(rawSource, IS_MOBILE ? 1100 : 1600);
   const removed = await removeBackground(source, {
-    model: 'isnet', // 全精度模型：鏡框邊緣去背乾淨很多（首次下載較久，有進度顯示）
+    // 桌機用全精度（邊緣最乾淨）；手機用量化小模型避免 iOS 記憶體不足當機
+    model: IS_MOBILE ? 'isnet_quint8' : 'isnet',
     progress: (key: string, cur: number, total: number) => {
       if (!myGlassesToastText) return;
       if (key.startsWith('fetch') && total) {

@@ -95,8 +95,10 @@ export default function GlassesManagement() {
       try {
         setSuccess('正在自動去背…（首次需下載高精度模型，請稍候）');
         const { removeBackground } = await import('@imgly/background-removal');
+        // 手機記憶體有限：全精度 isnet 會讓 iOS Safari 爆記憶體當機 → 手機改用量化小模型
+        const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1;
         imageBlob = await removeBackground(file, {
-          model: 'isnet',                               // 最高精度模型（預設只是 isnet_fp16 中階）
+          model: isMobile ? 'isnet_quint8' : 'isnet',
           device: 'gpu',                                // 有 WebGL 就用 GPU，邊緣更乾淨
           output: { format: 'image/png', quality: 1 },  // 無損 PNG，保留 alpha 邊緣
         });
