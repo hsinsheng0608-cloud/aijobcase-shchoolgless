@@ -289,7 +289,7 @@ export default function GlassesManagement() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
             {items.map(item => (
               <div key={item.id} className={`border rounded-xl overflow-hidden ${item.is_active ? '' : 'opacity-50'}`}>
-                <div className="aspect-square bg-gray-50 relative">
+                <div className="aspect-square bg-gradient-to-br from-slate-100 to-slate-300 relative">
                   <img src={imgSrc(item.image_url)} alt={item.name}
                     className="w-full h-full object-contain p-2" />
                   <span className={`absolute top-2 right-2 text-xs px-2 py-0.5 rounded-full font-medium ${

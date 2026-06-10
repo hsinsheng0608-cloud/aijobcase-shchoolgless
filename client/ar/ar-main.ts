@@ -1248,6 +1248,11 @@ function closeCamera() {
 }
 
 btnMyGlasses?.addEventListener('click', openCamera);
+// 我的眼鏡收藏 →「＋上傳眼鏡照片」：關閉彈窗後走同一條 選圖→去背→套用→存收藏 流程
+document.getElementById('my-collection-add')?.addEventListener('click', () => {
+  document.getElementById('my-collection-modal')?.classList.add('hidden');
+  myGlassesInput?.click();
+});
 btnSnapGlasses?.addEventListener('click', openCamera);
 camCancel?.addEventListener('click', closeCamera);
 // 改用上傳圖片：關相機 → 開選圖/相簿

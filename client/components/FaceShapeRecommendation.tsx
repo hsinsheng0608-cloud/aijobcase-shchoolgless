@@ -183,7 +183,7 @@ export default function FaceShapeRecommendation({ detectedFaceShape, onSelectIte
                     }`}>
 
                     {/* 圖片 */}
-                    <div className="aspect-[4/3] md:aspect-square bg-gray-50 rounded-t-2xl overflow-hidden relative">
+                    <div className="aspect-[4/3] md:aspect-square bg-gradient-to-br from-slate-100 to-slate-300 rounded-t-2xl overflow-hidden relative">
                       <img src={imgSrc(item.image_url)} alt={item.name}
                         className="w-full h-full object-contain p-4" />
 
