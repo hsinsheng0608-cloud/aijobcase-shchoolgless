@@ -232,20 +232,23 @@ export class Glasses3D {
     const videoH = this.videoEl.videoHeight;
     const dispW  = this.videoEl.clientWidth;
     const dispH  = this.videoEl.clientHeight;
-    const sx = dispW / videoW;
-    const sy = dispH / videoH;
+    // video 以 object-cover 顯示＝等比放大後置中裁切，不是拉伸：
+    // 必須用「同一個」cover 縮放係數 + 裁切偏移換算，否則直式手機（如安卓 640x480 橫式鏡頭）會整個對不準
+    const s    = Math.max(dispW / videoW, dispH / videoH);
+    const offX = (dispW - videoW * s) / 2;  // 被裁切時為負
+    const offY = (dispH - videoH * s) / 2;
 
     // 鼻樑為錨點，把 raw 像素轉成 ortho 螢幕座標（+ CSS 鏡像）
     const cxRaw = noseBridge ? noseBridge.x : (leftEye.irisCenter.x + rightEye.irisCenter.x) / 2;
     const cyRaw = (leftEye.irisCenter.y + rightEye.irisCenter.y) / 2;
-    const cx = dispW - cxRaw * sx;  // 鏡像 X
-    const cy = cyRaw * sy;
+    const cx = dispW - (cxRaw * s + offX);  // 鏡像 X
+    const cy = cyRaw * s + offY;
 
     // 還原 3D 真實眼距（補償 yaw 透視壓縮）
     const eyeDistPx = Math.hypot(
       rightEye.irisCenter.x - leftEye.irisCenter.x,
       rightEye.irisCenter.y - leftEye.irisCenter.y,
-    ) * sx;
+    ) * s;
     const cosYaw   = Math.max(Math.abs(Math.cos(pose.yaw)), 0.3);
     const trueDist = eyeDistPx / cosYaw;
     const rawUnit  = trueDist * scale * 1.25;  // 放大基準，預設套上去更貼合臉寬（仍可用尺寸拉桿微調）
