@@ -216,15 +216,20 @@ const CourseManageModal: React.FC<{
   const [mats, setMats] = useState<Material[]>([]);
   const [upFile, setUpFile] = useState<File | null>(null);
   const [busy, setBusy] = useState('');
-  const [srcCourseId, setSrcCourseId] = useState('');
-  const [srcMats, setSrcMats] = useState<Material[]>([]);
+  // 教材庫：列出「其他課程」的所有教材（即教材管理中非本課程的項目），可直接套用
+  const [libMats, setLibMats] = useState<(Material & { courseName: string })[]>([]);
 
   const loadMats = () => { getMaterials(course.id).then(setMats).catch(() => {}); };
   useEffect(loadMats, [course.id]);
   useEffect(() => {
-    if (srcCourseId) getMaterials(srcCourseId).then(setSrcMats).catch(() => setSrcMats([]));
-    else setSrcMats([]);
-  }, [srcCourseId]);
+    Promise.all(
+      otherCourses.map(c =>
+        getMaterials(c.id)
+          .then(list => list.map(m => ({ ...m, courseName: c.name })))
+          .catch(() => [] as (Material & { courseName: string })[])
+      )
+    ).then(lists => setLibMats(lists.flat()));
+  }, [course.id]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -252,7 +257,7 @@ const CourseManageModal: React.FC<{
     setBusy(`套用「${m.title}」中…`);
     try {
       await moveMaterial(m.id, course.id);
-      setSrcMats(prev => prev.filter(x => x.id !== m.id));
+      setLibMats(prev => prev.filter(x => x.id !== m.id));
       loadMats();
     } catch (e: any) { alert('套用失敗: ' + e.message); }
     finally { setBusy(''); }
@@ -312,26 +317,20 @@ const CourseManageModal: React.FC<{
             </div>
           </section>
 
-          {/* 套用其他課程教材 */}
-          {otherCourses.length > 0 && (
+          {/* 套用教材庫（教材管理中其他課程的項目，直接列出） */}
+          {libMats.length > 0 && (
             <section className="space-y-2">
-              <h4 className="text-xs font-bold text-slate-500">套用其他課程的教材（移轉到本課程）</h4>
-              <select value={srcCourseId} onChange={e => setSrcCourseId(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none">
-                <option value="">選擇來源課程…</option>
-                {otherCourses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              {srcCourseId && (srcMats.length > 0 ? (
-                <ul className="space-y-1">
-                  {srcMats.map(m => (
-                    <li key={m.id} className="flex items-center gap-2 text-sm text-slate-700 bg-slate-50 rounded-lg px-3 py-2">
-                      <span className="truncate flex-1">{m.title}</span>
-                      <button onClick={() => handleApply(m)} disabled={!!busy}
-                        className="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1 rounded-lg shrink-0 disabled:opacity-40">套用 →</button>
-                    </li>
-                  ))}
-                </ul>
-              ) : <p className="text-xs text-slate-400">該課程沒有教材</p>)}
+              <h4 className="text-xs font-bold text-slate-500">套用既有教材（從教材管理移轉到本課程）</h4>
+              <ul className="space-y-1 max-h-44 overflow-y-auto">
+                {libMats.map(m => (
+                  <li key={m.id} className="flex items-center gap-2 text-sm text-slate-700 bg-slate-50 rounded-lg px-3 py-2">
+                    <span className="truncate flex-1">{m.title}</span>
+                    <span className="text-[10px] text-slate-400 shrink-0">{m.courseName}</span>
+                    <button onClick={() => handleApply(m)} disabled={!!busy}
+                      className="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1 rounded-lg shrink-0 disabled:opacity-40">套用 →</button>
+                  </li>
+                ))}
+              </ul>
             </section>
           )}
 
