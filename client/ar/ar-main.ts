@@ -3,7 +3,7 @@
  * Orchestrates face detection, lens rendering, guidance, chat, and session recording
  */
 
-import { initFaceDetector, detectFaceInImage, resumeCamera, type FaceResult } from './modules/face-detector';
+import { initFaceDetector, detectFaceInImage, resumeCamera, releaseCamera, type FaceResult } from './modules/face-detector';
 import { LensRenderer, type LensColor } from './modules/lens-renderer';
 import { registerGlassesUrl } from './modules/glasses-assets';
 import { removeBackground } from '@imgly/background-removal';
@@ -201,6 +201,19 @@ function onFaceResult(result: FaceResult) {
 }
 
 // Size slider
+// ── AR 狀態保存/還原 ─────────────────────────────────────────────
+// 安卓拍照切到原生相機時，整個分頁可能被系統回收；重載後自動還原模式/款式/大小位置
+const AR_STATE_KEY = 'edumind_ar_state';
+function saveArState(patch: Record<string, unknown>) {
+  try {
+    const cur = JSON.parse(sessionStorage.getItem(AR_STATE_KEY) || '{}');
+    sessionStorage.setItem(AR_STATE_KEY, JSON.stringify({ ...cur, ...patch }));
+  } catch { /* ignore */ }
+}
+function getArState(): Record<string, any> {
+  try { return JSON.parse(sessionStorage.getItem(AR_STATE_KEY) || '{}'); } catch { return {}; }
+}
+
 const sizeRange = document.getElementById('size-range') as HTMLInputElement;
 const sizeLabel = document.getElementById('size-label')!;
 
@@ -214,12 +227,14 @@ sizeRange.addEventListener('input', () => {
   } else {
     renderer.setLensScale(2.1 * (pct / 100));
   }
+  saveArState({ size: pct });
 });
 
 // 眼鏡高低位置微調滑桿（眼鏡模式）
 const posRange = document.getElementById('pos-range') as HTMLInputElement | null;
 posRange?.addEventListener('input', () => {
   glasses3DScene.setOffsetY(parseInt(posRange.value, 10) / 100);
+  saveArState({ pos: parseInt(posRange.value, 10) });
 });
 
 // Fullscreen toggle
@@ -365,6 +380,7 @@ modeContact.addEventListener('click', () => {
   glassesOptions.style.display = 'none';
   const posSlider = document.getElementById('pos-slider');
   if (posSlider) posSlider.style.display = 'none';
+  saveArState({ mode: 'contact' });
   // Reset size slider to current lens scale
   sizeRange.value = String(Math.round((renderer.getLensScale() / 1.8) * 100));
   sizeLabel.textContent = `${sizeRange.value}%`;
@@ -379,6 +395,7 @@ modeGlasses.addEventListener('click', () => {
   contactOptions.style.display = 'none';
   const posSlider = document.getElementById('pos-slider');
   if (posSlider) posSlider.style.display = 'flex';
+  saveArState({ mode: 'glasses' });
   // Reset size slider and sync glassesScale3D
   const pct = Math.round((renderer.getGlassesScale() / 2.0) * 100);
   sizeRange.value = String(pct);
@@ -387,6 +404,20 @@ modeGlasses.addEventListener('click', () => {
   applyOpticsMode();
 });
 
+// 頁面重載後還原基本狀態（模式/大小/高低）
+(function restoreArBasics() {
+  const st = getArState();
+  if (st.mode === 'glasses') modeGlasses.click();
+  if (typeof st.size === 'number' && sizeRange) {
+    sizeRange.value = String(st.size);
+    sizeRange.dispatchEvent(new Event('input'));
+  }
+  if (typeof st.pos === 'number' && posRange) {
+    posRange.value = String(st.pos);
+    posRange.dispatchEvent(new Event('input'));
+  }
+})();
+
 // Lens catalog — dynamic buttons from API
 function buildLensButtons(items: { id: string; name: string; image_url: string; lens_color?: string }[]) {
   const container = document.getElementById('contact-options')!;
@@ -394,6 +425,7 @@ function buildLensButtons(items: { id: string; name: string; image_url: string; 
   items.forEach((item, i) => {
     const btn = document.createElement('button');
     btn.className = 'lens-catalog-btn flex-shrink-0 w-10 h-10 rounded-full border-2 border-transparent overflow-hidden transition hover:border-white/70 focus:outline-none';
+    btn.dataset.lensId = item.id;
     if (i === 0) btn.classList.add('ring-2', 'ring-white');
     btn.title = item.lens_color || item.name;
     const img = document.createElement('img');
@@ -407,6 +439,7 @@ function buildLensButtons(items: { id: string; name: string; image_url: string; 
       });
       btn.classList.add('ring-2', 'ring-white');
       renderer.setLensImage(resolveUrl(item.image_url));
+      saveArState({ lensId: item.id });
       // 罐頭訊息
       const lensName = item.name || item.lens_color || '此款式';
       addChatMessage(
@@ -435,7 +468,11 @@ async function fetchLensCatalog() {
     const res = await fetch(`${API_ORIGIN}/api/glasses?item_type=lens`);
     if (!res.ok) return;
     const data = await res.json();
-    if (data.success && data.data?.length) buildLensButtons(data.data);
+    if (data.success && data.data?.length) {
+      buildLensButtons(data.data);
+      const st = getArState();
+      if (st.lensId) document.querySelector<HTMLElement>(`.lens-catalog-btn[data-lens-id="${st.lensId}"]`)?.click();
+    }
   } catch { /* silent */ }
 }
 fetchLensCatalog();
@@ -1157,8 +1194,16 @@ myGlassesInput?.addEventListener('change', () => {
   if (file) processGlassesPhoto(file);
 });
 
-// 從背景/檔案選擇器/相機回到 AR 頁時，恢復主相機畫面（iOS 黑屏修正）
-document.addEventListener('visibilitychange', () => { if (!document.hidden) resumeCamera(); });
+// 切到背景（含開原生相機 App）→ 主動釋放鏡頭，避免安卓相機資源衝突導致整頁被系統砍掉；
+// 回到前景 → 重新取得鏡頭（iOS 黑屏修正同樣靠這個）
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    releaseCamera();
+    closeCamera();  // 拍照彈窗的串流一併釋放
+  } else {
+    resumeCamera();
+  }
+});
 window.addEventListener('focus', () => resumeCamera());
 window.addEventListener('pageshow', () => resumeCamera());
 
@@ -1414,6 +1459,7 @@ function buildGlassesButtons(items: { id: string; name: string; image_url: strin
       usingCatalogGlasses = true;
       glasses3DScene.setCatalogTexture(resolveUrl(item.image_url));
       glasses3DScene.setColor(item.temple_color ? parseInt(item.temple_color.replace('#', ''), 16) : 0x111418);
+      saveArState({ glassesId: item.id });
     });
     container.appendChild(btn);
   });
@@ -1443,6 +1489,11 @@ async function loadGlassesCatalog() {
     if (Array.isArray(items) && items.length > 0) {
       catalogItems = items;
       buildGlassesButtons(items);
+      // 重載後還原上次選的款式（覆蓋預設套用的第一款）
+      const st = getArState();
+      if (st.glassesId) {
+        document.querySelector<HTMLElement>(`.glasses-btn[data-glasses="${st.glassesId}"]`)?.click();
+      }
     }
   } catch (e) {
     console.warn('[glasses] API failed:', e);

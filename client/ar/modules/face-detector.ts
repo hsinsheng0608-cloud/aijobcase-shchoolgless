@@ -144,6 +144,11 @@ let activeVideo: HTMLVideoElement | null = null;
 let activeStream: MediaStream | null = null;
 let resuming = false;
 
+/** 暫時釋放相機（切背景/開原生相機 App 時），避免安卓相機資源衝突被系統砍頁；回前景用 resumeCamera() */
+export function releaseCamera(): void {
+  try { activeStream?.getTracks().forEach(t => t.stop()); } catch { /* ignore */ }
+}
+
 /** 從背景/檔案選擇器回到 AR 頁時呼叫：串流還活著就重播，已中斷就重新取得 */
 export async function resumeCamera(): Promise<void> {
   const v = activeVideo;
