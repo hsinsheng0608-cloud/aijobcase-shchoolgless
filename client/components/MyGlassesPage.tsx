@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getAuthHeaders } from '../services/authService';
 import { API_BASE } from '../apiBase';
+import { cutoutGlasses } from '../ar/modules/glasses-cutout';
 
 /**
  * 我的眼鏡：在主系統先上傳自己的眼鏡照（自動去背），
@@ -8,184 +9,6 @@ import { API_BASE } from '../apiBase';
  * 圖片存資料庫、綁個人帳號。
  */
 interface Item { id: string; label: string | null; created_at: string; }
-
-const IS_MOBILE = /iPhone|iPad|Android/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1;
-
-async function fileToImage(file: Blob): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = URL.createObjectURL(file);
-  });
-}
-
-/** 去背前縮圖：省記憶體（手機防當機）、加速 */
-async function downscale(file: Blob, maxDim: number): Promise<Blob> {
-  try {
-    const img = await fileToImage(file);
-    const w = img.naturalWidth, h = img.naturalHeight;
-    if (!w || !h || Math.max(w, h) <= maxDim) return file;
-    const s = maxDim / Math.max(w, h);
-    const cv = document.createElement('canvas');
-    cv.width = Math.round(w * s); cv.height = Math.round(h * s);
-    cv.getContext('2d')!.drawImage(img, 0, 0, cv.width, cv.height);
-    return await new Promise<Blob>(res => cv.toBlob(b => res(b || file), 'image/png'));
-  } catch { return file; }
-}
-
-/** 裁切到不透明內容的邊界框（AR 套用時眼鏡才會填滿、對得準） */
-async function cropToContent(blob: Blob): Promise<Blob> {
-  try {
-    const img = await fileToImage(blob);
-    const w = img.naturalWidth, h = img.naturalHeight;
-    if (!w || !h) return blob;
-    const cv = document.createElement('canvas');
-    cv.width = w; cv.height = h;
-    const ctx = cv.getContext('2d', { willReadFrequently: true })!;
-    ctx.drawImage(img, 0, 0);
-    const d = ctx.getImageData(0, 0, w, h).data;
-    let minX = w, minY = h, maxX = 0, maxY = 0;
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      if (d[(y * w + x) * 4 + 3] > 16) {
-        if (x < minX) minX = x; if (x > maxX) maxX = x;
-        if (y < minY) minY = y; if (y > maxY) maxY = y;
-      }
-    }
-    if (maxX <= minX || maxY <= minY) return blob;
-    const padX = Math.round((maxX - minX) * 0.03), padY = Math.round((maxY - minY) * 0.06);
-    minX = Math.max(0, minX - padX); maxX = Math.min(w - 1, maxX + padX);
-    minY = Math.max(0, minY - padY); maxY = Math.min(h - 1, maxY + padY);
-    const out = document.createElement('canvas');
-    out.width = maxX - minX + 1; out.height = maxY - minY + 1;
-    out.getContext('2d')!.drawImage(cv, minX, minY, out.width, out.height, 0, 0, out.width, out.height);
-    return await new Promise<Blob>(res => out.toBlob(b => res(b || blob), 'image/png'));
-  } catch { return blob; }
-}
-
-
-/** 背景色清除：用「被去背模型移除的區域」學出背景顏色群（k-means），
- *  把鏡框內顏色相同的殘留（透過鏡片拍到的桌面）一併變透明 */
-async function removeBgColorRemnants(originalBlob: Blob, cutBlob: Blob): Promise<Blob> {
-  try {
-    const [oImg, cImg] = await Promise.all([fileToImage(originalBlob), fileToImage(cutBlob)]);
-    const w = cImg.naturalWidth, h = cImg.naturalHeight;
-    if (!w || !h || oImg.naturalWidth !== w || oImg.naturalHeight !== h) return cutBlob;
-    const cvO = document.createElement('canvas'); cvO.width = w; cvO.height = h;
-    const cvC = document.createElement('canvas'); cvC.width = w; cvC.height = h;
-    const ctxO = cvO.getContext('2d', { willReadFrequently: true })!;
-    const ctxC = cvC.getContext('2d', { willReadFrequently: true })!;
-    ctxO.drawImage(oImg, 0, 0); ctxC.drawImage(cImg, 0, 0);
-    const od = ctxO.getImageData(0, 0, w, h).data;
-    const cData = ctxC.getImageData(0, 0, w, h);
-    const cd = cData.data, n = w * h;
-
-    // 1) 取樣被移除的背景像素（cut alpha=0 處的原圖顏色）
-    const samples: number[][] = [];
-    const step = Math.max(1, Math.floor(n / 6000));
-    for (let i = 0; i < n; i += step) {
-      if (cd[i * 4 + 3] <= 8) samples.push([od[i * 4], od[i * 4 + 1], od[i * 4 + 2]]);
-    }
-    if (samples.length < 50) return cutBlob;
-
-    // 2) 簡易 k-means（k=3, 6 輪）
-    const K = 3;
-    let centers = [0, Math.floor(samples.length / 2), samples.length - 1].map(i => [...samples[i]]);
-    const assign = new Array(samples.length).fill(0);
-    const d2 = (a: number[], b: number[]) => (a[0]-b[0])**2 + (a[1]-b[1])**2 + (a[2]-b[2])**2;
-    for (let it = 0; it < 6; it++) {
-      for (let i = 0; i < samples.length; i++) {
-        let bi = 0, bd = Infinity;
-        for (let k = 0; k < K; k++) { const dd = d2(samples[i], centers[k]); if (dd < bd) { bd = dd; bi = k; } }
-        assign[i] = bi;
-      }
-      const sum = Array.from({ length: K }, () => [0, 0, 0, 0]);
-      for (let i = 0; i < samples.length; i++) { const k = assign[i]; sum[k][0]+=samples[i][0]; sum[k][1]+=samples[i][1]; sum[k][2]+=samples[i][2]; sum[k][3]++; }
-      for (let k = 0; k < K; k++) if (sum[k][3] > 0) centers[k] = [sum[k][0]/sum[k][3], sum[k][1]/sum[k][3], sum[k][2]/sum[k][3]];
-    }
-    // 每群容差 = 平均距離*1.6 + 14
-    const tol = centers.map((c, k) => {
-      let s = 0, cnt = 0;
-      for (let i = 0; i < samples.length; i++) if (assign[i] === k) { s += Math.sqrt(d2(samples[i], c)); cnt++; }
-      return cnt ? (s / cnt) * 1.6 + 14 : 0;
-    });
-
-    // 3) 不透明像素若顏色落在背景色群 → 視為鏡片殘留，變近透明
-    for (let i = 0; i < n; i++) {
-      const o = i * 4, al = cd[o + 3];
-      if (al <= 8) continue;
-      const px = [cd[o], cd[o + 1], cd[o + 2]];
-      for (let k = 0; k < K; k++) {
-        if (tol[k] > 0 && Math.sqrt(d2(px, centers[k])) < tol[k]) { cd[o + 3] = Math.round(al * 0.06); break; }
-      }
-    }
-    ctxC.putImageData(cData, 0, 0);
-    return await new Promise<Blob>(res => cvC.toBlob(b => res(b || cutBlob), 'image/png'));
-  } catch { return cutBlob; }
-}
-
-/** 鏡片透明化：去背後鏡片內仍是「透過鏡片拍到的背景」，侵蝕找出鏡片核心將其壓到 10% 透明度 */
-async function makeLensTransparent(blob: Blob): Promise<Blob> {
-  try {
-    const img = await fileToImage(blob);
-    const w = img.naturalWidth, h = img.naturalHeight;
-    if (!w || !h) return blob;
-    const cv = document.createElement('canvas');
-    cv.width = w; cv.height = h;
-    const ctx = cv.getContext('2d', { willReadFrequently: true })!;
-    ctx.drawImage(img, 0, 0);
-    const imgData = ctx.getImageData(0, 0, w, h);
-    const d = imgData.data, n = w * h;
-    const a = new Uint8Array(n);
-    for (let i = 0; i < n; i++) a[i] = d[i * 4 + 3] > 24 ? 1 : 0;
-    // 1) 侵蝕找「鏡片核心」（半徑要小於鏡片、大於鏡框粗細）
-    const R = Math.max(6, Math.round(Math.min(w, h) * 0.045));
-    const tmp = new Uint8Array(n);
-    for (let y = 0; y < h; y++) {
-      const row = y * w;
-      for (let x = 0; x < w; x++) {
-        let m = 1;
-        for (let k = -R; k <= R; k++) { const xx = x + k; if (xx < 0 || xx >= w || a[row + xx] === 0) { m = 0; break; } }
-        tmp[row + x] = m;
-      }
-    }
-    const core = new Uint8Array(n);
-    for (let x = 0; x < w; x++) {
-      for (let y = 0; y < h; y++) {
-        let m = 1;
-        for (let k = -R; k <= R; k++) { const yy = y + k; if (yy < 0 || yy >= h || tmp[yy * w + x] === 0) { m = 0; break; } }
-        core[y * w + x] = m;
-      }
-    }
-    // 2) 把核心「膨脹」回去（R+輕微外擴），補回侵蝕掉的鏡片邊緣，直貼鏡框內緣
-    const R2 = R + Math.max(3, Math.round(R * 0.4));
-    const dil1 = new Uint8Array(n);
-    for (let y = 0; y < h; y++) {
-      const row = y * w;
-      for (let x = 0; x < w; x++) {
-        let m = 0;
-        for (let k = -R2; k <= R2; k++) { const xx = x + k; if (xx >= 0 && xx < w && core[row + xx]) { m = 1; break; } }
-        dil1[row + x] = m;
-      }
-    }
-    const lens = new Uint8Array(n);
-    for (let x = 0; x < w; x++) {
-      for (let y = 0; y < h; y++) {
-        let m = 0;
-        for (let k = -R2; k <= R2; k++) { const yy = y + k; if (yy >= 0 && yy < h && dil1[yy * w + x]) { m = 1; break; } }
-        lens[y * w + x] = m && a[y * w + x] ? 1 : 0;
-      }
-    }
-    for (let i = 0; i < n; i++) if (lens[i]) d[i * 4 + 3] = Math.round(d[i * 4 + 3] * 0.10);
-    // 去白邊
-    for (let i = 0; i < n; i++) {
-      const o = i * 4, al = d[o + 3];
-      if (al > 0 && al < 230 && Math.min(d[o], d[o + 1], d[o + 2]) > 190) d[o + 3] = Math.round(al * 0.35);
-    }
-    ctx.putImageData(imgData, 0, 0);
-    return await new Promise<Blob>(res => cv.toBlob(b => res(b || blob), 'image/png'));
-  } catch { return blob; }
-}
 
 const MyGlassesPage: React.FC = () => {
   const [items, setItems] = useState<Item[]>([]);
@@ -225,27 +48,9 @@ const MyGlassesPage: React.FC = () => {
   async function handleUpload(file: File) {
     setBusy('準備中…');
     try {
-      // 去背（手機用輕量模型避免記憶體不足）
-      const small = await downscale(file, IS_MOBILE ? 1100 : 1600);
-      setBusy('AI 去背中…（首次需下載模型，請稍候）');
-      const { removeBackground } = await import('@imgly/background-removal');
-      let cut: Blob;
-      try {
-        cut = await removeBackground(small, {
-          model: IS_MOBILE ? 'isnet_quint8' : 'isnet',
-          output: { format: 'image/png', quality: 1 },
-          progress: (key: string, cur: number, total: number) => {
-            if (key.startsWith('fetch') && total) setBusy(`下載模型 ${Math.round((cur / total) * 100)}%…`);
-            else setBusy('AI 去背中…');
-          },
-        });
-      } catch { cut = small; }
-      setBusy('清除鏡片殘留背景…');
-      cut = await removeBgColorRemnants(small, cut);
-      setBusy('裁切中…');
-      const croppedFirst = await cropToContent(cut);
-      setBusy('鏡片透明化…');
-      const cropped = await makeLensTransparent(croppedFirst);
+      // 與 AR「拍我的眼鏡」完全同一條去背管線（共用模組）
+      const cropped = await cutoutGlasses(file, setBusy);
+      setBusy('上傳中…');
       const fd = new FormData();
       fd.append('image', cropped, 'my-glasses.png');
       fd.append('kind', 'glasses');
