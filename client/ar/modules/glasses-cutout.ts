@@ -116,15 +116,23 @@ async function makeLensTransparent(blob: Blob): Promise<Blob> {
       const id = nextId++; let head = 0, tail = 0;
       qx[tail] = x0; qy[tail] = y0; tail++; label[p0] = id;
       const members: number[] = [];
+      let bMinX = x0, bMaxX = x0, bMinY = y0, bMaxY = y0;
       while (head < tail) {
         const cx = qx[head], cy = qy[head]; head++;
         const cp = cy * w + cx; members.push(cp);
+        if (cx < bMinX) bMinX = cx; if (cx > bMaxX) bMaxX = cx;
+        if (cy < bMinY) bMinY = cy; if (cy > bMaxY) bMaxY = cy;
         if (cx > 0 && label[cp - 1] === -1 && deep[cp - 1]) { label[cp - 1] = id; qx[tail] = cx - 1; qy[tail] = cy; tail++; }
         if (cx < w - 1 && label[cp + 1] === -1 && deep[cp + 1]) { label[cp + 1] = id; qx[tail] = cx + 1; qy[tail] = cy; tail++; }
         if (cy > 0 && label[cp - w] === -1 && deep[cp - w]) { label[cp - w] = id; qx[tail] = cx; qy[tail] = cy - 1; tail++; }
         if (cy < h - 1 && label[cp + w] === -1 && deep[cp + w]) { label[cp + w] = id; qx[tail] = cx; qy[tail] = cy + 1; tail++; }
       }
-      if (members.length >= minArea) {
+      // 大塊（鏡片）一定清；小塊要是「飽滿的口袋」才清（雙樑間的小封閉區），
+      // 細長條（粗框中心線、填滿率低）不清 → 不會誤傷鏡框
+      const bw = bMaxX - bMinX + 1, bh = bMaxY - bMinY + 1;
+      const fillRatio = members.length / (bw * bh);
+      const isPocket = members.length >= Math.round(n * 0.0015) && fillRatio > 0.35;
+      if (members.length >= minArea || isPocket) {
         for (const m of members) {
           // 顏色洗成中性白＋6% 透明度：保留鏡片光澤感，但看不出照片內容
           const o = m * 4;
