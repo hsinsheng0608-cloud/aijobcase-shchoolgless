@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getAuthHeaders } from '../services/authService';
+import { chatStream } from '../services/chatService';
 import { API_BASE } from '../apiBase';
 
 interface QA {
@@ -16,6 +17,46 @@ interface AIChatViewProps {
 }
 
 const AIChatView: React.FC<AIChatViewProps> = ({ courseId, onBack }) => {
+  // 問 AI（教材 RAG）對話狀態
+  const [aiMsgs, setAiMsgs] = useState<{ role: 'user' | 'ai'; content: string; sources?: string[] }[]>([]);
+  const [aiInput, setAiInput] = useState('');
+  const [aiBusy, setAiBusy] = useState(false);
+
+  async function askAi() {
+    const q = aiInput.trim();
+    if (!q || aiBusy || !courseId) return;
+    setAiInput('');
+    setAiBusy(true);
+    setAiMsgs(prev => [...prev, { role: 'user', content: q }, { role: 'ai', content: '' }]);
+    try {
+      for await (const ev of chatStream(q, courseId)) {
+        if (ev.type === 'token' && ev.text) {
+          setAiMsgs(prev => {
+            const next = [...prev];
+            next[next.length - 1] = { ...next[next.length - 1], content: next[next.length - 1].content + ev.text };
+            return next;
+          });
+        } else if (ev.type === 'sources' && Array.isArray(ev.data)) {
+          const names = Array.from(new Set(ev.data.map((d: any) => d
+
+?.metadata?.filename).filter(Boolean))) as string[];
+          setAiMsgs(prev => {
+            const next = [...prev];
+            next[next.length - 1] = { ...next[next.length - 1], sources: names };
+            return next;
+          });
+        } else if (ev.type === 'error') {
+          setAiMsgs(prev => {
+            const next = [...prev];
+            next[next.length - 1] = { ...next[next.length - 1], content: `⚠️ ${ev.message || '回覆失敗，請稍後再試'}` };
+            return next;
+          });
+        }
+      }
+    } finally {
+      setAiBusy(false);
+    }
+  }
   const [items, setItems] = useState<QA[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -322,6 +363,39 @@ const AIChatView: React.FC<AIChatViewProps> = ({ courseId, onBack }) => {
           </div>
         ))}
       </div>
+
+      {/* 問 AI（教材 RAG）：題庫找不到答案時直接問，AI 會引用課程教材回答 */}
+      {courseId && (
+        <div className="border-t border-slate-200 bg-white flex-shrink-0">
+          {aiMsgs.length > 0 && (
+            <div className="max-h-56 overflow-y-auto px-4 py-3 space-y-2 bg-slate-50/60">
+              {aiMsgs.map((m, i) => (
+                <div key={i} className={`text-sm rounded-xl px-3 py-2 max-w-[92%] whitespace-pre-wrap leading-relaxed ${
+                  m.role === 'user' ? 'bg-indigo-600 text-white ml-auto' : 'bg-white border border-slate-200 text-slate-700'
+                }`}>
+                  {m.content.replace(/\*\*/g, '') || (aiBusy && i === aiMsgs.length - 1 ? '思考中…' : '')}
+                  {m.sources && m.sources.length > 0 && (
+                    <p className="mt-1.5 text-[10px] text-slate-400">📎 資料來源：{m.sources.join('、')}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex items-center gap-2 px-4 py-2.5">
+            <input
+              value={aiInput}
+              onChange={e => setAiInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') askAi(); }}
+              placeholder="題庫找不到？直接問 AI（會參考課程教材回答）…"
+              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            />
+            <button onClick={askAi} disabled={aiBusy || !aiInput.trim()}
+              className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-4 py-2.5 rounded-xl disabled:opacity-40 transition">
+              {aiBusy ? '…' : '問 AI'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 底部提示 */}
       <div className="px-5 py-2.5 border-t border-slate-100 bg-slate-50/60 flex-shrink-0">
