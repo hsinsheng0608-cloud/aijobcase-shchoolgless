@@ -1494,10 +1494,17 @@ async function loadGlassesCatalog() {
     if (Array.isArray(items) && items.length > 0) {
       catalogItems = items;
       buildGlassesButtons(items);
-      // 重載後還原上次選的款式（覆蓋預設套用的第一款）
-      const st = getArState();
-      if (st.glassesId) {
-        document.querySelector<HTMLElement>(`.glasses-btn[data-glasses="${st.glassesId}"]`)?.click();
+      // 從「我的眼鏡」頁跳轉：?applyMine=<id> 優先直接套用該副；否則還原上次選的款式
+      const mine = new URLSearchParams(location.search).get('applyMine');
+      if (mine) {
+        modeGlasses.click();
+        usingCatalogGlasses = true;
+        glasses3DScene.setCatalogTexture(`${API_ORIGIN}/api/my-glasses/${mine}/image`, true);
+      } else {
+        const st = getArState();
+        if (st.glassesId) {
+          document.querySelector<HTMLElement>(`.glasses-btn[data-glasses="${st.glassesId}"]`)?.click();
+        }
       }
     }
   } catch (e) {

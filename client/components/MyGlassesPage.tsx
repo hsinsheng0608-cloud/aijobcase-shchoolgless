@@ -63,11 +63,74 @@ async function cropToContent(blob: Blob): Promise<Blob> {
   } catch { return blob; }
 }
 
+/** 鏡片透明化：去背後鏡片內仍是「透過鏡片拍到的背景」，侵蝕找出鏡片核心將其壓到 10% 透明度 */
+async function makeLensTransparent(blob: Blob): Promise<Blob> {
+  try {
+    const img = await fileToImage(blob);
+    const w = img.naturalWidth, h = img.naturalHeight;
+    if (!w || !h) return blob;
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    const ctx = cv.getContext('2d', { willReadFrequently: true })!;
+    ctx.drawImage(img, 0, 0);
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const d = imgData.data, n = w * h;
+    const a = new Uint8Array(n);
+    for (let i = 0; i < n; i++) a[i] = d[i * 4 + 3] > 24 ? 1 : 0;
+    const R = Math.max(8, Math.round(Math.min(w, h) * 0.06));
+    const tmp = new Uint8Array(n);
+    for (let y = 0; y < h; y++) {
+      const row = y * w;
+      for (let x = 0; x < w; x++) {
+        let m = 1;
+        for (let k = -R; k <= R; k++) { const xx = x + k; if (xx < 0 || xx >= w || a[row + xx] === 0) { m = 0; break; } }
+        tmp[row + x] = m;
+      }
+    }
+    const inner = new Uint8Array(n);
+    for (let x = 0; x < w; x++) {
+      for (let y = 0; y < h; y++) {
+        let m = 1;
+        for (let k = -R; k <= R; k++) { const yy = y + k; if (yy < 0 || yy >= h || tmp[yy * w + x] === 0) { m = 0; break; } }
+        inner[y * w + x] = m;
+      }
+    }
+    for (let i = 0; i < n; i++) if (inner[i]) d[i * 4 + 3] = Math.round(d[i * 4 + 3] * 0.10);
+    // 去白邊
+    for (let i = 0; i < n; i++) {
+      const o = i * 4, al = d[o + 3];
+      if (al > 0 && al < 230 && Math.min(d[o], d[o + 1], d[o + 2]) > 190) d[o + 3] = Math.round(al * 0.35);
+    }
+    ctx.putImageData(imgData, 0, 0);
+    return await new Promise<Blob>(res => cv.toBlob(b => res(b || blob), 'image/png'));
+  } catch { return blob; }
+}
+
 const MyGlassesPage: React.FC = () => {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<Item | null>(null);
+  const [editName, setEditName] = useState('');
+  const [savingName, setSavingName] = useState(false);
+
+  async function saveName() {
+    if (!preview || !editName.trim()) return;
+    setSavingName(true);
+    try {
+      const r = await fetch(`${API_BASE}/my-glasses/${preview.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ label: editName.trim() }),
+      });
+      const d = await r.json();
+      if (!d.success) throw new Error(d.error || '儲存失敗');
+      setItems(prev => prev.map(x => x.id === preview.id ? { ...x, label: editName.trim() } : x));
+      setPreview(p => p ? { ...p, label: editName.trim() } : p);
+    } catch (e: any) { alert('改名失敗: ' + e.message); }
+    finally { setSavingName(false); }
+  }
 
   const load = () => {
     fetch(`${API_BASE}/my-glasses?kind=glasses`, { headers: getAuthHeaders() })
@@ -96,8 +159,10 @@ const MyGlassesPage: React.FC = () => {
           },
         });
       } catch { cut = small; }
+      setBusy('鏡片透明化…');
+      const lensed = await makeLensTransparent(cut);
       setBusy('裁切上傳中…');
-      const cropped = await cropToContent(cut);
+      const cropped = await cropToContent(lensed);
       const fd = new FormData();
       fd.append('image', cropped, 'my-glasses.png');
       fd.append('kind', 'glasses');
@@ -155,11 +220,12 @@ const MyGlassesPage: React.FC = () => {
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {items.map(item => (
-            <div key={item.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden group">
+            <div key={item.id} onClick={() => { setPreview(item); setEditName(item.label || ''); }}
+              className="bg-white rounded-2xl border border-slate-200 overflow-hidden group cursor-pointer hover:shadow-md transition">
               <div className="aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-300 relative">
                 <img src={`${API_BASE}/my-glasses/${item.id}/image`} alt={item.label || '我的眼鏡'}
                   className="w-full h-full object-contain p-2" />
-                <button onClick={() => handleDelete(item)} title="刪除"
+                <button onClick={(e) => { e.stopPropagation(); handleDelete(item); }} title="刪除"
                   className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 text-white text-xs opacity-0 group-hover:opacity-100 hover:bg-red-500 transition">✕</button>
               </div>
               <div className="px-3 py-2">
@@ -168,6 +234,40 @@ const MyGlassesPage: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* 預覽彈窗：大圖 + 改名 + 前往 AR 試戴 */}
+      {preview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setPreview(null)}></div>
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md relative overflow-hidden">
+            <div className="aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-300">
+              <img src={`${API_BASE}/my-glasses/${preview.id}/image`} alt={preview.label || '我的眼鏡'}
+                className="w-full h-full object-contain p-4" />
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="flex gap-2">
+                <input value={editName} onChange={e => setEditName(e.target.value)}
+                  placeholder="眼鏡名稱"
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+                <button onClick={saveName} disabled={savingName || !editName.trim() || editName.trim() === (preview.label || '')}
+                  className="shrink-0 bg-indigo-600 text-white text-sm font-bold px-4 py-2.5 rounded-xl disabled:opacity-40">
+                  {savingName ? '…' : '儲存'}
+                </button>
+              </div>
+              <button onClick={() => window.open(`/ar/index.html?applyMine=${preview.id}`, '_blank')}
+                className="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold py-3 rounded-xl transition">
+                👓 前往 AR 模擬練習試戴這副
+              </button>
+              <div className="flex gap-2">
+                <button onClick={() => { handleDelete(preview); setPreview(null); }}
+                  className="flex-1 py-2.5 rounded-xl bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 text-sm font-bold">刪除</button>
+                <button onClick={() => setPreview(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 text-sm font-bold">關閉</button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
