@@ -39,13 +39,18 @@ const KnowledgeManagement: React.FC = () => {
 
   const loadItems = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams();
-    if (filterCourse)   params.set('course_id', filterCourse);
-    if (filterCategory) params.set('category', filterCategory);
-    const r = await api(`/api/knowledge?${params}`);
-    const d = await r.json();
-    setItems(d.data ?? []);
-    setLoading(false);
+    try {
+      const params = new URLSearchParams();
+      if (filterCourse)   params.set('course_id', filterCourse);
+      if (filterCategory) params.set('category', filterCategory);
+      const r = await api(`/api/knowledge?${params}`);
+      const d = await r.json();
+      setItems(d.data ?? []);
+    } catch {
+      setItems([]);
+    } finally {
+      setLoading(false);  // 網路錯誤也要解除「載入中」
+    }
   }, [filterCourse, filterCategory]);
 
   useEffect(() => { loadCourses(); }, [loadCourses]);
@@ -61,8 +66,9 @@ const KnowledgeManagement: React.FC = () => {
   // AI 從課程教材自動生成問答（需先在篩選器選定課程）
   const handleGenerate = async () => {
     if (!filterCourse) { alert('請先在上方「全部課程」下拉選單選定一門課程，AI 會讀該課程的教材生成問答。'); return; }
-    const count = parseInt(window.prompt('要生成幾筆問答？(1-30)', '10') || '', 10);
-    if (!count) return;
+    const raw = parseInt(window.prompt('要生成幾筆問答？(1-30)', '10') || '', 10);
+    if (!raw) return;
+    const count = Math.min(30, Math.max(1, raw));  // 夾在 1-30，避免送出超量
     setGenerating(true);
     try {
       const r = await api('/api/knowledge/generate', {

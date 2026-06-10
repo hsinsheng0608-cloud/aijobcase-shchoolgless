@@ -40,6 +40,7 @@ const TeacherManual: React.FC = () => (
       <Step n={2} text="點選「教材管理」上傳 PDF / DOCX / PPTX / XLSX 教材。" sub="系統自動解析 → 切片 → 向量化，建立可供 AI 檢索的知識庫（RAG）。" />
       <Step n={3} text="教材狀態顯示「READY（N chunks）」即表示建立索引完成。" />
       <Note>同一課程可上傳多份教材；學生在 AR 頁的「AI 助教」提問時，AI 會跨教材搜尋最相關段落並引用回答。</Note>
+      <Step n={4} text="捷徑：在「我的課程 → 建立新課程」時可直接附上教材檔，系統會自動建索引並從教材生成課後問答，一步到位。" />
     </Section>
 
     <Section title="三、問答管理（課後複習題庫）">
@@ -54,9 +55,10 @@ const TeacherManual: React.FC = () => (
       <Step n={2} text="學生於「測驗系統」選擇分類與題數作答，系統即時批改並記分。" />
     </Section>
 
-    <Section title="五、AR 練習報表">
-      <Step n={1} text="點選「AR 練習報表」，查看每位學生的 AR 使用狀況與視光量測數據。" />
-      <Step n={2} text="點選學生姓名可展開該生的詳細紀錄。" />
+    <Section title="五、學習狀況（學生監測）">
+      <Step n={1} text="點選「學習狀況」，每位學生一列：最後活動、AI 提問數、測驗次數與正確率、AR 練習完成數。" />
+      <Step n={2} text="系統自動標示 🔴 7 天未活動 / 🟡 測驗低分 / 🟢 正常，方便找出需要關心的學生。" />
+      <Step n={3} text="點任一學生列可展開明細：最近提問、測驗逐題對錯、AR 練習紀錄。" />
     </Section>
 
     <Section title="六、眼鏡素材管理">

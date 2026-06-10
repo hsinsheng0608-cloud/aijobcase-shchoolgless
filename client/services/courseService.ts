@@ -81,7 +81,7 @@ export async function deleteCourse(courseId: string): Promise<void> {
   if (!data.success) throw new Error(data.error);
 }
 
-/** AI 讀本課程教材生成課後問答（寫入課業問答） */
+/** AI 讀本課程教材生成課後問答（寫入課後複習） */
 export async function generateCourseQa(courseId: string, count = 10): Promise<number> {
   const res = await fetch(`${API_BASE}/knowledge/generate`, {
     method: 'POST',

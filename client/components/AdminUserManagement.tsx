@@ -167,7 +167,7 @@ const AdminUserManagement: React.FC = () => {
         <div>
           <h2 className="text-2xl font-black text-slate-800">用戶管理</h2>
           <p className="text-sm text-slate-500">管理系統用戶帳號</p>
-        </div>
+        </div>{/* header-actions 之後接 */}
         <div className="flex gap-2 flex-wrap justify-end">
           <button
             onClick={() => { setShowCreate(!showCreate); setShowUpload(false); }}
@@ -186,6 +186,9 @@ const AdminUserManagement: React.FC = () => {
         </div>
       </div>
 
+      {message && !showUpload && (
+        <div className="p-3 rounded-xl text-sm font-medium bg-green-50 text-green-800 border border-green-200">{message}</div>
+      )}
       {/* 新增單一用戶（管理員可選任何身分；老師只能建學生） */}
       {showCreate && (
         <form onSubmit={handleCreateOne} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">

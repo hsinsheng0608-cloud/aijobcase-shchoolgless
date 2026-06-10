@@ -22,6 +22,7 @@ const AIChatView: React.FC<AIChatViewProps> = ({ courseId, onBack }) => {
   const [activeCategory, setActiveCategory] = useState('全部');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState(false);
   const [searchResults, setSearchResults] = useState<(QA & { similarity: number })[] | null>(null);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -60,9 +61,9 @@ const AIChatView: React.FC<AIChatViewProps> = ({ courseId, onBack }) => {
           body: JSON.stringify({ query: search.trim(), course_id: courseId || undefined, top_k: 10 }),
         });
         const data = await res.json();
-        setSearchResults(data.data ?? []);
+        setSearchResults(data.data ?? []); setSearchError(false);
       } catch {
-        setSearchResults([]);
+        setSearchResults([]); setSearchError(true);
       } finally {
         setSearching(false);
       }
@@ -231,7 +232,7 @@ const AIChatView: React.FC<AIChatViewProps> = ({ courseId, onBack }) => {
             <svg className="w-12 h-12 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            <p className="text-sm">{search ? `找不到「${search}」相關問答` : '此課程尚無問答'}</p>
+            <p className="text-sm">{search ? (searchError ? '搜尋失敗，請檢查網路後再試' : `找不到「${search}」相關問答`) : '此課程尚無問答'}</p>
             {!search && (
               <p className="text-xs text-slate-400/80 mt-1 text-center leading-relaxed px-6">
                 老師上傳教材後，系統會自動生成課後問答（約需 1 分鐘）。<br />

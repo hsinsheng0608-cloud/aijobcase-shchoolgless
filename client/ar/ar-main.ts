@@ -279,7 +279,7 @@ async function loadHistory() {
     const json = await res.json();
     const items = json.data ?? [];
     if (!items.length) {
-      historyList.innerHTML = '<div class="text-center text-white/40 text-sm py-8">尚無試戴照<br>到 AR 點頂部「儲存試戴照」即可存入 📸</div>';
+      historyList.innerHTML = '<div class="text-center text-white/40 text-sm py-8">尚無試戴照<br>點右上「⋯」→「儲存試戴照」即可存入 📸</div>';
       return;
     }
     historyList.innerHTML = '';
@@ -575,11 +575,7 @@ function getArContext(): string {
     parts.push(`AI 鏡頭辨識臉型：${zh[latestFaceResult.faceShape] || latestFaceResult.faceShape}`);
   }
 
-  if (sessionActive) {
-    parts.push(`練習${sessionPaused ? '暫停' : '進行中'}（用時 ${timerDisplay.textContent}）`);
-  } else {
-    parts.push('練習尚未開始');
-  }
+  // 練習計時功能已停用（control-bar 隱藏），不輸出練習狀態避免誤導 AI
 
   const pd = document.getElementById('tab-optics-pd')?.textContent;
   if (pd && pd !== '--') parts.push(`即時估算瞳距：${pd}`);
@@ -636,8 +632,9 @@ function attachTryOnButtons(msgEl: HTMLElement, names: string[]) {
 function applyGlassesByName(name: string): boolean {
   const target = name.trim();
   const buttons = Array.from(document.querySelectorAll<HTMLElement>('#glasses-options .glasses-btn'));
-  let btn = buttons.find(b => (b.title || '').trim() === target)
-    || buttons.find(b => (b.title || '').includes(target) || target.includes((b.title || '').trim()));
+  const named = buttons.filter(b => (b.title || '').trim());  // 空 title 的內建鈕不參與模糊比對
+  let btn = named.find(b => (b.title || '').trim() === target)
+    || named.find(b => b.title!.includes(target) || target.includes(b.title!.trim()));
   if (!btn) return false;
   // 確保在眼鏡模式，再觸發該款式的點擊（沿用原本套用邏輯）
   if (renderer.getMode() !== 'glasses') modeGlasses.click();

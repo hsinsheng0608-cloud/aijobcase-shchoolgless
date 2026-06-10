@@ -14,7 +14,7 @@ const slides = [
   {
     emoji: '💬',
     title: '課後複習',
-    desc: '隨時向 AI 提問，知識庫自動比對最相關的解答，找不到再由 AI 即時回答',
+    desc: '用關鍵字搜尋老師建立的問答題庫，點開看詳解；想自由問 AI 請用 AR 的「AI 助教」',
     bg: 'from-blue-500 to-indigo-600',
   },
   {
@@ -32,7 +32,7 @@ const slides = [
   {
     emoji: '🚀',
     title: '準備好了！',
-    desc: '底部導覽可快速切換功能，點「更多」開啟完整選單',
+    desc: '手機用底部導覽、電腦用左側選單切換功能，更多功能在選單裡',
     bg: 'from-pink-500 to-rose-600',
   },
 ];

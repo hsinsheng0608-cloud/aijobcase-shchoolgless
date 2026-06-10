@@ -38,6 +38,7 @@ const CourseList: React.FC<CourseListProps> = ({ userRole, onSelectCourse }) => 
     setCreating(true);
     try {
       const course = await createCourse(newName, newDesc);
+      setCourses(prev => [course, ...prev]);  // 先入列，避免教材處理失敗時課程「看不見」而被重複建立
       // 建立課程時可直接附教材：上傳到新課程，教材管理頁同步可見
       if (newFile) {
         setCreateHint('課程已建立，教材上傳並建立 AI 索引中…');
@@ -55,7 +56,6 @@ const CourseList: React.FC<CourseListProps> = ({ userRole, onSelectCourse }) => 
           setCreateHint('教材處理失敗，可至教材管理重新上傳');
         }
       }
-      setCourses(prev => [course, ...prev]);
       setShowCreate(false);
       setNewName('');
       setNewDesc('');

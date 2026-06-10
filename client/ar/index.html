@@ -89,30 +89,6 @@
                         </button>
                     </div>
                 </div>
-                <!-- 去背處理中提示 -->
-                <div id="my-glasses-toast" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/60">
-                    <div class="bg-black/80 border border-amber-500/40 rounded-2xl px-6 py-5 flex flex-col items-center gap-3">
-                        <div class="w-8 h-8 border-3 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
-                        <p id="my-glasses-toast-text" class="text-sm text-white/90">套用您的眼鏡中…</p>
-                        <p class="text-[10px] text-white/40">首次使用需稍候幾秒，請耐心等候</p>
-                    </div>
-                </div>
-                <!-- 我的眼鏡收藏：管理彈窗 -->
-                <div id="my-collection-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
-                    <div class="bg-slate-900 border border-amber-500/30 rounded-2xl w-[420px] max-w-[92vw] max-h-[80vh] flex flex-col overflow-hidden">
-                        <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
-                            <h3 class="text-sm font-semibold text-white/90">我的眼鏡收藏</h3>
-                            <button id="my-collection-close" class="text-white/40 hover:text-white text-lg leading-none">✕</button>
-                        </div>
-                        <div id="my-collection-grid" class="p-3 grid grid-cols-3 gap-2 overflow-y-auto flex-1 content-start">
-                            <p class="col-span-3 text-center text-white/40 text-xs py-8">載入中…</p>
-                        </div>
-                        <div class="px-4 py-3 border-t border-white/10 flex gap-2">
-                            <button id="my-collection-add" class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold transition">＋ 上傳眼鏡照片</button>
-                            <button id="my-collection-clear" class="flex-1 py-2.5 rounded-xl bg-red-600/80 hover:bg-red-500 text-white text-sm font-medium transition">🗑 全部清除</button>
-                        </div>
-                    </div>
-                </div>
                 <span id="user-name" class="hidden 2xl:inline text-sm text-white/70"></span>
             </div>
         </div>
@@ -501,6 +477,33 @@
     </div>
 
     <!-- Practice History Modal -->
+
+        <!-- 從 top-bar 移出：fixed 彈窗不可放在會 transform 的祖先內 -->
+<!-- 去背處理中提示 -->
+        <div id="my-glasses-toast" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/60">
+            <div class="bg-black/80 border border-amber-500/40 rounded-2xl px-6 py-5 flex flex-col items-center gap-3">
+                <div class="w-8 h-8 border-3 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+                <p id="my-glasses-toast-text" class="text-sm text-white/90">套用您的眼鏡中…</p>
+                <p class="text-[10px] text-white/40">首次使用需稍候幾秒，請耐心等候</p>
+            </div>
+        </div>
+        <!-- 我的眼鏡收藏：管理彈窗 -->
+        <div id="my-collection-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
+            <div class="bg-slate-900 border border-amber-500/30 rounded-2xl w-[420px] max-w-[92vw] max-h-[80vh] flex flex-col overflow-hidden">
+                <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
+                    <h3 class="text-sm font-semibold text-white/90">我的眼鏡收藏</h3>
+                    <button id="my-collection-close" class="text-white/40 hover:text-white text-lg leading-none">✕</button>
+                </div>
+                <div id="my-collection-grid" class="p-3 grid grid-cols-3 gap-2 overflow-y-auto flex-1 content-start">
+                    <p class="col-span-3 text-center text-white/40 text-xs py-8">載入中…</p>
+                </div>
+                <div class="px-4 py-3 border-t border-white/10 flex gap-2">
+                    <button id="my-collection-add" class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold transition">＋ 上傳眼鏡照片</button>
+                    <button id="my-collection-clear" class="flex-1 py-2.5 rounded-xl bg-red-600/80 hover:bg-red-500 text-white text-sm font-medium transition">🗑 全部清除</button>
+                </div>
+            </div>
+        </div>
+
     <div id="history-modal" class="fixed inset-0 z-50 hidden">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" id="history-backdrop"></div>
         <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-900 rounded-2xl w-[480px] max-w-[90vw] max-h-[70vh] overflow-hidden border border-slate-700">

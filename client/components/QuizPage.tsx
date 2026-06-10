@@ -29,6 +29,7 @@ export default function QuizPage() {
   const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [confirmed, setConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [quizError, setQuizError] = useState('');
 
   useEffect(() => {
     fetch(`${API}/api/exams/qa-categories`, { headers: authHeader })
@@ -38,17 +39,25 @@ export default function QuizPage() {
 
   async function startQuiz() {
     setLoading(true);
-    const params = new URLSearchParams({ count: String(questionCount) });
-    if (selectedCategory) params.set('category', selectedCategory);
-    const r = await fetch(`${API}/api/exams/qa-quiz?${params}`, { headers: authHeader });
-    const d = await r.json();
-    setLoading(false);
-    if (d.success && d.data.length > 0) {
-      setQuiz(d.data);
-      setAnswers(new Array(d.data.length).fill(null));
-      setCurrent(0);
-      setConfirmed(false);
-      setPhase('quiz');
+    setQuizError('');
+    try {
+      const params = new URLSearchParams({ count: String(questionCount) });
+      if (selectedCategory) params.set('category', selectedCategory);
+      const r = await fetch(`${API}/api/exams/qa-quiz?${params}`, { headers: authHeader });
+      const d = await r.json();
+      if (d.success && d.data.length > 0) {
+        setQuiz(d.data);
+        setAnswers(new Array(d.data.length).fill(null));
+        setCurrent(0);
+        setConfirmed(false);
+        setPhase('quiz');
+      } else {
+        setQuizError(d.success ? '此分類題目不足，請換個分類或減少題數。' : (d.error || '載入題目失敗，請稍後再試。'));
+      }
+    } catch {
+      setQuizError('網路連線失敗，請檢查網路後再試。');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -129,6 +138,9 @@ export default function QuizPage() {
             </div>
           </div>
 
+          {quizError && (
+            <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3">{quizError}</div>
+          )}
           <button
             onClick={startQuiz}
             disabled={loading}

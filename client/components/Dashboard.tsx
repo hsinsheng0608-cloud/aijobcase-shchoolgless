@@ -130,7 +130,7 @@ export default function Dashboard({ role, onNavigate }: { role: UserRole; onNavi
           {[
             { label: '教材管理', desc: '上傳課程教材', icon: '📄', color: 'bg-blue-50 border-blue-100 hover:bg-blue-100', tab: 'materials' },
             { label: '問答管理', desc: '新增知識庫問答', icon: '💬', color: 'bg-indigo-50 border-indigo-100 hover:bg-indigo-100', tab: 'knowledge-mgmt' },
-            { label: '測驗系統', desc: '出題與測驗', icon: '📝', color: 'bg-amber-50 border-amber-100 hover:bg-amber-100', tab: 'exams' },
+            { label: '測驗系統', desc: '題庫隨機測驗', icon: '📝', color: 'bg-amber-50 border-amber-100 hover:bg-amber-100', tab: 'exams' },
             { label: '學習狀況', desc: '學生活動與預警', icon: '📈', color: 'bg-emerald-50 border-emerald-100 hover:bg-emerald-100', tab: 'student-status' },
           ].map(action => (
             <button

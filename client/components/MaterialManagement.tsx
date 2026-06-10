@@ -42,6 +42,7 @@ const MaterialManagement: React.FC<MaterialManagementProps> = ({ courseId }) => 
   const [courses, setCourses] = useState<{id: string; name: string}[]>([]);
   const [internalCourseId, setInternalCourseId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [coursesLoaded, setCoursesLoaded] = useState(false);
 
   const effectiveCourseId = courseId ?? internalCourseId;
 
@@ -68,23 +69,31 @@ const MaterialManagement: React.FC<MaterialManagementProps> = ({ courseId }) => 
         .then(d => {
           const list = d.data ?? d.courses ?? [];
           setCourses(list);
-          // 自動選第一個課程，不需要手動選
-          if (list.length > 0 && !internalCourseId) {
-            setInternalCourseId(list[0].id);
-          }
+          if (list.length > 0 && !internalCourseId) setInternalCourseId(list[0].id);
         })
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => setCoursesLoaded(true));
+    } else {
+      setCoursesLoaded(true);
     }
   }, [courseId]);
 
-  // 載入中
-  if (!courseId && courses.length === 0) {
+  // 尚未載入完課程清單 → 轉圈；載入完但沒有任何課程 → 引導建立課程（不再無限轉圈）
+  if (!courseId && !coursesLoaded) {
     return (
       <div className="flex items-center justify-center py-20">
         <svg className="w-6 h-6 animate-spin text-indigo-400" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
         </svg>
+      </div>
+    );
+  }
+  if (!courseId && coursesLoaded && courses.length === 0) {
+    return (
+      <div className="text-center py-20 text-slate-400">
+        <p className="text-lg font-medium">尚無課程</p>
+        <p className="text-sm mt-1">請先到「我的課程」建立課程，再回來上傳教材。</p>
       </div>
     );
   }
