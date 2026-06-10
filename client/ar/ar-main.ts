@@ -524,7 +524,26 @@ function getArContext(): string {
   const pd = document.getElementById('tab-optics-pd')?.textContent;
   if (pd && pd !== '--') parts.push(`即時估算瞳距：${pd}`);
 
+  // 可試戴款式清單：AI 推薦只能從這裡挑、[APPLY] 也用這些全名
+  if (catalogItems.length > 0) {
+    const names = catalogItems.slice(0, 40).map(g => g.name).join('、');
+    parts.push(`〈可試戴款式清單〉${names}`);
+  }
+
   return parts.join('；');
+}
+
+// AI 同意套用協議：[APPLY:款式全名] → 找到對應款式按鈕並真的套用
+function applyGlassesByName(name: string): boolean {
+  const target = name.trim();
+  const buttons = Array.from(document.querySelectorAll<HTMLElement>('#glasses-options .glasses-btn'));
+  let btn = buttons.find(b => (b.title || '').trim() === target)
+    || buttons.find(b => (b.title || '').includes(target) || target.includes((b.title || '').trim()));
+  if (!btn) return false;
+  // 確保在眼鏡模式，再觸發該款式的點擊（沿用原本套用邏輯）
+  if (renderer.getMode() !== 'glasses') modeGlasses.click();
+  btn.click();
+  return true;
 }
 
 // 防重複送出：AI 回覆中再按送出/Enter 一律忽略，避免同一句連發
@@ -548,10 +567,23 @@ async function handleSendMessage(text: string) {
       null,
       (token) => {
         aiText += token;
-        aiMsg.innerHTML = renderMd(aiText);
+        // 串流期間隱藏（可能不完整的）[APPLY:...] 指令行
+        aiMsg.innerHTML = renderMd(aiText.replace(/\[APPLY:[^\]]*\]?\s*$/, '').trimEnd());
         chatMessages.scrollTop = chatMessages.scrollHeight;
       },
-      () => { /* done */ },
+      () => {
+        // 完成：解析套用指令 → 真的幫使用者戴上
+        const m = aiText.match(/\[APPLY:([^\]]+)\]/);
+        if (m) {
+          aiMsg.innerHTML = renderMd(aiText.replace(m[0], '').trim());
+          const ok = applyGlassesByName(m[1]);
+          addChatMessage(
+            ok ? `✅ 已為你套用「${m[1].trim()}」！可用上方滑桿調整大小與高低。`
+               : `⚠️ 找不到「${m[1].trim()}」這個款式，請從上方款式列手動選擇。`,
+            'ai',
+          );
+        }
+      },
       (err) => { aiMsg.textContent = `錯誤: ${err}`; },
       getArContext()
     );
