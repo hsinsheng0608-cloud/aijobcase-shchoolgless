@@ -241,7 +241,7 @@ body.ui-clean .panel-toggle-top {
     right: 0.6rem;
     top: 50%;
     transform: translateY(-50%);
-    z-index: 70;
+    z-index: 45;  /* 高於面板(40) 但低於彈窗/全螢幕對話(50/60)，避免誤觸蓋掉它們 */
     width: 2.4rem;
     height: 2.4rem;
     border-radius: 9999px;
