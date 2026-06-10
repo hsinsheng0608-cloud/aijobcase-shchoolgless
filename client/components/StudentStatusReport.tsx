@@ -79,105 +79,102 @@ const StudentStatusReport: React.FC = () => {
         </p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
-        <table className="w-full text-sm min-w-[640px]">
-          <thead>
-            <tr className="text-left text-xs text-slate-400 border-b border-slate-100">
-              <th className="px-4 py-3">學生</th>
-              <th className="px-3 py-3">最後活動</th>
-              <th className="px-3 py-3 text-center">AI 提問</th>
-              <th className="px-3 py-3 text-center">測驗（次／正確率）</th>
-              <th className="px-3 py-3 text-center">AR 練習（完成／次）</th>
-              <th className="px-3 py-3 text-center">修課</th>
-              <th className="px-3 py-3">狀態</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(s => {
-              const st = statusOf(s);
-              return (
-                <React.Fragment key={s.id}>
-                  <tr onClick={() => toggle(s)}
-                    className={`border-b border-slate-50 cursor-pointer hover:bg-indigo-50/40 transition ${openId === s.id ? 'bg-indigo-50/60' : ''}`}>
-                    <td className="px-4 py-3">
-                      <span className="font-bold text-slate-800">{s.name}</span>
-                      <span className="ml-2 text-xs text-slate-400">{s.student_id}</span>
-                    </td>
-                    <td className="px-3 py-3 text-slate-600">{timeAgo(s.last_active)}</td>
-                    <td className="px-3 py-3 text-center font-mono">{s.question_count}</td>
-                    <td className="px-3 py-3 text-center font-mono">
-                      {s.exam_attempts > 0 ? `${s.exam_attempts} / ${s.exam_correct_rate ?? '--'}%` : '—'}
-                    </td>
-                    <td className="px-3 py-3 text-center font-mono">
-                      {s.ar_sessions > 0 ? `${s.ar_completed} / ${s.ar_sessions}` : '—'}
-                    </td>
-                    <td className="px-3 py-3 text-center font-mono">{s.enrolled_courses}</td>
-                    <td className="px-3 py-3">
-                      <span className={`text-xs px-2 py-1 rounded-full font-bold ${st.cls}`}>{st.icon} {st.label}</span>
-                    </td>
-                  </tr>
-                  {openId === s.id && (
-                    <tr className="bg-slate-50/60">
-                      <td colSpan={7} className="px-6 py-4">
-                        {actLoading ? (
-                          <p className="text-xs text-slate-400 animate-pulse">載入明細…</p>
-                        ) : activity ? (
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                            <div>
-                              <h4 className="font-bold text-slate-600 mb-2">💬 最近提問（{activity.questions.length}）</h4>
-                              {activity.questions.length ? (
-                                <ul className="space-y-1.5">
-                                  {activity.questions.slice(0, 8).map((q, i) => (
-                                    <li key={i} className="text-slate-600">
-                                      <span className="text-slate-800">{q.content.slice(0, 36)}</span>
-                                      <span className="text-slate-400 ml-1">{q.course_name ? `· ${q.course_name}` : '· AR助教'} · {timeAgo(q.created_at)}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              ) : <p className="text-slate-400">尚無提問</p>}
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-slate-600 mb-2">📝 測驗紀錄（{activity.attempts.length}）</h4>
-                              {activity.attempts.length ? (
-                                <ul className="space-y-1.5">
-                                  {activity.attempts.slice(0, 8).map((a, i) => (
-                                    <li key={i} className="text-slate-600">
-                                      <span>{a.is_correct ? '✅' : '❌'}</span>
-                                      <span className="ml-1 text-slate-800">{a.question_text || '（題目已刪除）'}</span>
-                                      <span className="text-slate-400 ml-1">{timeAgo(a.created_at)}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              ) : <p className="text-slate-400">尚無測驗</p>}
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-slate-600 mb-2">👓 AR 練習（{activity.ar_sessions.length}）</h4>
-                              {activity.ar_sessions.length ? (
-                                <ul className="space-y-1.5">
-                                  {activity.ar_sessions.slice(0, 8).map((a, i) => (
-                                    <li key={i} className="text-slate-600">
-                                      <span>{a.status === 'COMPLETED' ? '✅ 完成' : '⏸ 未完成'}</span>
-                                      <span className="ml-1">{a.steps_completed ?? 0}/{a.total_steps ?? '?'} 步</span>
-                                      {a.duration_seconds != null && <span className="ml-1">· {Math.round(a.duration_seconds / 60)} 分</span>}
-                                      <span className="text-slate-400 ml-1">{timeAgo(a.created_at)}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              ) : <p className="text-slate-400">尚無 AR 練習</p>}
-                            </div>
-                          </div>
-                        ) : <p className="text-xs text-slate-400">載入失敗</p>}
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              );
-            })}
-            {rows.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-12 text-center text-slate-400">尚無學生帳號</td></tr>
-            )}
-          </tbody>
-        </table>
+      {/* 學生清單：每位一列，點擊向下展開統計與活動明細 */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+        {rows.map(s => {
+          const st = statusOf(s);
+          const open = openId === s.id;
+          return (
+            <div key={s.id}>
+              <button type="button" onClick={() => toggle(s)}
+                className={`w-full flex items-center gap-3 px-4 md:px-6 py-3.5 text-left transition ${open ? 'bg-indigo-50/50' : 'hover:bg-slate-50/60'}`}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-slate-700 truncate">{s.name}
+                    <span className="ml-2 text-xs font-normal text-slate-400">{s.student_id}</span>
+                  </p>
+                  <p className="text-xs text-slate-400 mt-0.5">最後活動：{timeAgo(s.last_active)}</p>
+                </div>
+                <span className={`shrink-0 text-xs px-2 py-1 rounded-full font-bold whitespace-nowrap ${st.cls}`}>{st.icon} {st.label}</span>
+                <svg className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {open && (
+                <div className="px-4 md:px-6 pb-4 pt-1 bg-indigo-50/30 space-y-4">
+                  {/* 統計總覽 */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {[
+                      ['AI 提問', `${s.question_count} 次`],
+                      ['測驗', s.exam_attempts > 0 ? `${s.exam_attempts} 次 / ${s.exam_correct_rate ?? '--'}%` : '—'],
+                      ['AR 練習', s.ar_sessions > 0 ? `完成 ${s.ar_completed} / ${s.ar_sessions}` : '—'],
+                      ['修課', `${s.enrolled_courses} 門`],
+                    ].map(([k, v]) => (
+                      <div key={k as string} className="bg-white rounded-xl border border-slate-100 px-3 py-2">
+                        <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest">{k}</p>
+                        <p className="text-sm font-bold text-slate-700 mt-0.5">{v}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* 活動明細 */}
+                  {actLoading ? (
+                    <p className="text-xs text-slate-400 animate-pulse">載入明細…</p>
+                  ) : activity ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                      <div>
+                        <h4 className="font-bold text-slate-600 mb-2">💬 最近提問（{activity.questions.length}）</h4>
+                        {activity.questions.length ? (
+                          <ul className="space-y-1.5">
+                            {activity.questions.slice(0, 8).map((q, i) => (
+                              <li key={i} className="text-slate-600">
+                                <span className="text-slate-800">{q.content.slice(0, 36)}</span>
+                                <span className="text-slate-400 ml-1">{q.course_name ? `· ${q.course_name}` : '· AR助教'} · {timeAgo(q.created_at)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : <p className="text-slate-400">尚無提問</p>}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-600 mb-2">📝 測驗紀錄（{activity.attempts.length}）</h4>
+                        {activity.attempts.length ? (
+                          <ul className="space-y-1.5">
+                            {activity.attempts.slice(0, 8).map((a, i) => (
+                              <li key={i} className="text-slate-600">
+                                <span>{a.is_correct ? '✅' : '❌'}</span>
+                                <span className="ml-1 text-slate-800">{a.question_text || '（題目已刪除）'}</span>
+                                <span className="text-slate-400 ml-1">{timeAgo(a.created_at)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : <p className="text-slate-400">尚無測驗</p>}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-600 mb-2">👓 AR 練習（{activity.ar_sessions.length}）</h4>
+                        {activity.ar_sessions.length ? (
+                          <ul className="space-y-1.5">
+                            {activity.ar_sessions.slice(0, 8).map((a, i) => (
+                              <li key={i} className="text-slate-600">
+                                <span>{a.status === 'COMPLETED' ? '✅ 完成' : '⏸ 未完成'}</span>
+                                <span className="ml-1">{a.steps_completed ?? 0}/{a.total_steps ?? '?'} 步</span>
+                                {a.duration_seconds != null && <span className="ml-1">· {Math.round(a.duration_seconds / 60)} 分</span>}
+                                <span className="text-slate-400 ml-1">{timeAgo(a.created_at)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : <p className="text-slate-400">尚無 AR 練習</p>}
+                      </div>
+                    </div>
+                  ) : <p className="text-xs text-slate-400">載入失敗</p>}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {rows.length === 0 && (
+          <div className="px-6 py-12 text-center text-slate-400">尚無學生帳號</div>
+        )}
       </div>
 
       <p className="text-xs text-slate-400">
