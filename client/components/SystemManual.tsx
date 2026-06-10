@@ -46,7 +46,7 @@ const TeacherManual: React.FC = () => (
       <Step n={1} text="點選「問答管理」，可新增、編輯、刪除問答（問題＋答案＋分類）。" />
       <Step n={2} text="這些問答會出現在學生的「課後複習」頁，供學生用關鍵字搜尋瀏覽。" />
       <Step n={3} text="同一批問答也會成為「測驗系統」的出題來源。" />
-      <Note>「課後複習」包含題庫瀏覽與「問 AI」：題庫是老師建立/AI 生成的問答；頁面底部可直接向 AI 提問，AI 會引用課程教材回答。</Note>
+      <Note>「課後複習」是純題庫閱覽（老師建立或 AI 從教材生成的問答）；想自由問 AI 請用 AR 頁右側的「AI 助教」。</Note>
     </Section>
 
     <Section title="四、測驗系統">
@@ -80,11 +80,11 @@ const StudentManual: React.FC = () => (
       <Step n={2} text="登入後進入「數據儀表板」首頁，從左側選單進入各功能。" />
     </Section>
 
-    <Section title="二、課後複習（題庫＋問 AI）">
+    <Section title="二、課後複習（題庫閱覽）">
       <Step n={1} text="點選「課後複習」，選擇課程後在搜尋框輸入關鍵字（例如：OK鏡、散光）。" />
       <Step n={2} text="點選問題即可展開詳解，最上方💡會顯示重點摘要。" />
       <Step n={3} text="答案預設顯示前 3 行，點「展開全文」可看完整內容。" />
-      <Note>題庫找不到答案時，頁面底部「問 AI」可直接提問，AI 會引用課程教材並附資料來源。</Note>
+      <Note>題庫找不到答案時，可到 AR 模擬練習的「AI 助教」自由提問。</Note>
     </Section>
 
     <Section title="三、AR 模擬試戴（視光數據自動顯示）">
