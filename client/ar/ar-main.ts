@@ -223,12 +223,22 @@ posRange?.addEventListener('input', () => {
 });
 
 // Fullscreen toggle
+// 安卓部分機型進全螢幕會自動轉橫向 → 進入時鎖定「當下的方向」（直拿就維持直式），退出解鎖
 const btnFullscreen = document.getElementById('btn-fullscreen')!;
-btnFullscreen.addEventListener('click', () => {
+btnFullscreen.addEventListener('click', async () => {
   if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().catch(() => {});
+    const current = (screen.orientation?.type || '').startsWith('landscape') ? 'landscape' : 'portrait';
+    try { await document.documentElement.requestFullscreen(); } catch { return; }
+    try { await (screen.orientation as any)?.lock?.(current); } catch { /* iOS 不支援 lock，忽略 */ }
   } else {
+    try { (screen.orientation as any)?.unlock?.(); } catch { /* ignore */ }
     document.exitFullscreen().catch(() => {});
+  }
+});
+// 使用者用手勢/返回鍵退出全螢幕時也要解鎖方向
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement) {
+    try { (screen.orientation as any)?.unlock?.(); } catch { /* ignore */ }
   }
 });
 
