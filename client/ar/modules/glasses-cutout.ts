@@ -69,28 +69,65 @@ async function makeLensTransparent(blob: Blob): Promise<Blob> {
     // 二值 alpha 遮罩（眼鏡=1）
     const a = new Uint8Array(n);
     for (let i = 0; i < n; i++) a[i] = d[i * 4 + 3] > 24 ? 1 : 0;
-    // 侵蝕半徑：要大於鏡框粗細、小於鏡片半徑（細框被侵蝕掉、鏡片核心留下）
-    // 注意：去背後的眼鏡是實心剪影，「不可」再膨脹回填——會覆蓋整副眼鏡（含鏡框）
-    const R = Math.max(8, Math.round(Math.min(w, h) * 0.06));
-    const tmp = new Uint8Array(n);
-    for (let y = 0; y < h; y++) {
-      const row = y * w;
-      for (let x = 0; x < w; x++) {
-        let m = 1;
-        for (let k = -R; k <= R; k++) { const xx = x + k; if (xx < 0 || xx >= w || a[row + xx] === 0) { m = 0; break; } }
-        tmp[row + x] = m;
+
+    // 距離變換（chamfer 3-4）：每個不透明像素到「透明區」的距離
+    // 鏡框是細條 → 距離小；鏡片內部（殘留背景）→ 距離大，可精準分離
+    const INF = 1 << 28;
+    const D = new Int32Array(n);
+    for (let i = 0; i < n; i++) D[i] = a[i] ? INF : 0;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const p = y * w + x;
+      if (!D[p]) continue;
+      let v = D[p];
+      if (x > 0) v = Math.min(v, D[p - 1] + 3);
+      if (y > 0) {
+        v = Math.min(v, D[p - w] + 3);
+        if (x > 0) v = Math.min(v, D[p - w - 1] + 4);
+        if (x < w - 1) v = Math.min(v, D[p - w + 1] + 4);
+      }
+      D[p] = v;
+    }
+    for (let y = h - 1; y >= 0; y--) for (let x = w - 1; x >= 0; x--) {
+      const p = y * w + x;
+      if (!D[p]) continue;
+      let v = D[p];
+      if (x < w - 1) v = Math.min(v, D[p + 1] + 3);
+      if (y < h - 1) {
+        v = Math.min(v, D[p + w] + 3);
+        if (x < w - 1) v = Math.min(v, D[p + w + 1] + 4);
+        if (x > 0) v = Math.min(v, D[p + w - 1] + 4);
+      }
+      D[p] = v;
+    }
+
+    // 門檻：~3.5% 短邊（鏡框厚度通常在此之下）；chamfer 單位 ×3
+    const T = Math.max(8, Math.min(22, Math.round(Math.min(w, h) * 0.035))) * 3;
+    const deep = new Uint8Array(n);
+    for (let i = 0; i < n; i++) deep[i] = D[i] > T ? 1 : 0;
+
+    // 只把「大面積」的深區域當鏡片（防止粗框中心被誤判）：連通區塊 ≥ 4% 像素才透明化
+    const label = new Int32Array(n).fill(-1);
+    const qx = new Int32Array(n), qy = new Int32Array(n);
+    let nextId = 0;
+    const minArea = Math.round(n * 0.04);
+    for (let y0 = 0; y0 < h; y0++) for (let x0 = 0; x0 < w; x0++) {
+      const p0 = y0 * w + x0;
+      if (label[p0] !== -1 || !deep[p0]) continue;
+      const id = nextId++; let head = 0, tail = 0;
+      qx[tail] = x0; qy[tail] = y0; tail++; label[p0] = id;
+      const members: number[] = [];
+      while (head < tail) {
+        const cx = qx[head], cy = qy[head]; head++;
+        const cp = cy * w + cx; members.push(cp);
+        if (cx > 0 && label[cp - 1] === -1 && deep[cp - 1]) { label[cp - 1] = id; qx[tail] = cx - 1; qy[tail] = cy; tail++; }
+        if (cx < w - 1 && label[cp + 1] === -1 && deep[cp + 1]) { label[cp + 1] = id; qx[tail] = cx + 1; qy[tail] = cy; tail++; }
+        if (cy > 0 && label[cp - w] === -1 && deep[cp - w]) { label[cp - w] = id; qx[tail] = cx; qy[tail] = cy - 1; tail++; }
+        if (cy < h - 1 && label[cp + w] === -1 && deep[cp + w]) { label[cp + w] = id; qx[tail] = cx; qy[tail] = cy + 1; tail++; }
+      }
+      if (members.length >= minArea) {
+        for (const m of members) d[m * 4 + 3] = Math.round(d[m * 4 + 3] * 0.10);
       }
     }
-    const inner = new Uint8Array(n);
-    for (let x = 0; x < w; x++) {
-      for (let y = 0; y < h; y++) {
-        let m = 1;
-        for (let k = -R; k <= R; k++) { const yy = y + k; if (yy < 0 || yy >= h || tmp[yy * w + x] === 0) { m = 0; break; } }
-        inner[y * w + x] = m;
-      }
-    }
-    // 鏡片核心 → 10% 透明度（戴上看得到眼睛）
-    for (let i = 0; i < n; i++) if (inner[i]) d[i * 4 + 3] = Math.round(d[i * 4 + 3] * 0.10);
     // 去白邊（defringe）：去背殘留的半透明淺色光暈再壓低，鏡框邊緣才乾淨
     for (let i = 0; i < n; i++) {
       const o = i * 4, a = d[o + 3];
