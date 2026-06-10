@@ -208,6 +208,10 @@
     body:has(#guidance-panel.panel-open) #btn-snap-glasses {
         display: none !important;
     }
+    /* :has() 後備（舊安卓瀏覽器）：由 JS 同步 body.sheet-open */
+    body.sheet-open #btn-snap-glasses {
+        display: none !important;
+    }
 }
 
 /* Desktop: hide mobile FABs */

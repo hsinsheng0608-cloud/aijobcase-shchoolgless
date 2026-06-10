@@ -303,6 +303,15 @@ function closeMobilePanels() {
   mobileBackdrop?.classList.remove('active');
 }
 
+// 舊安卓瀏覽器（三星瀏覽器 <21、舊 WebView）不支援 CSS :has()：
+// 用 MutationObserver 把「任一面板展開」同步成 body.sheet-open，CSS 走後備選擇器
+const syncSheetClass = () => {
+  const open = guidancePanel.classList.contains('panel-open') || chatPanel.classList.contains('panel-open');
+  document.body.classList.toggle('sheet-open', open);
+};
+new MutationObserver(syncSheetClass).observe(guidancePanel, { attributes: true, attributeFilter: ['class'] });
+new MutationObserver(syncSheetClass).observe(chatPanel, { attributes: true, attributeFilter: ['class'] });
+
 fabGuidance?.addEventListener('click', () => {
   const willOpen = !guidancePanel.classList.contains('panel-open');
   closeMobilePanels();
