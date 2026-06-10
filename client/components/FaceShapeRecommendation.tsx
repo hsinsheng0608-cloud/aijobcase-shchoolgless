@@ -99,43 +99,48 @@ export default function FaceShapeRecommendation({ detectedFaceShape, onSelectIte
       </div>
 
       <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-        {/* 左側：臉型選擇 */}
-        <div className="w-full md:w-56 bg-white border-b md:border-b-0 md:border-r p-4 flex flex-col gap-2 overflow-y-auto max-h-48 md:max-h-none">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">選擇臉型</p>
+        {/* 臉型選擇：手機＝頂部橫向膠囊列（省空間）；桌機＝左側欄 */}
+        <div className="w-full md:w-56 bg-white border-b md:border-b-0 md:border-r p-3 md:p-4 flex flex-col gap-2 md:overflow-y-auto shrink-0">
+          <p className="hidden md:block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">選擇臉型</p>
 
           {detectedFaceShape && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-2 text-xs text-blue-700 flex items-center gap-1.5">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 md:mb-2 text-xs text-blue-700 flex items-center gap-1.5">
               <IconTarget className="w-4 h-4 flex-shrink-0" />
               AR 自動辨識：{FACE_SHAPE_LABELS[detectedFaceShape]}
             </div>
           )}
 
-          {allFaceShapes.map(shape => (
-            <button key={shape} onClick={() => setFaceShape(shape)}
-              className={`w-full text-left px-3 py-3 rounded-xl border transition-all ${
-                faceShape === shape
-                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                  : 'bg-white text-gray-700 border-gray-200 hover:border-blue-400 hover:bg-blue-50'
-              }`}>
-              <div className="flex items-center gap-2">
-                {React.createElement(FACE_SHAPE_ICONS[shape], { className: 'w-5 h-5 flex-shrink-0' })}
-                <div>
-                  <p className="font-semibold text-sm">{FACE_SHAPE_LABELS[shape]}</p>
-                  <p className={`text-xs mt-0.5 ${faceShape === shape ? 'text-blue-100' : 'text-gray-400'}`}>
-                    {FACE_SHAPE_DESCRIPTIONS[shape]}
-                  </p>
+          {/* 臉型列：手機橫向滑動、桌機直立清單 */}
+          <div className="flex md:flex-col gap-2 overflow-x-auto md:overflow-x-visible pb-1 md:pb-0 -mx-1 px-1 scrollbar-none">
+            {allFaceShapes.map(shape => (
+              <button key={shape} onClick={() => setFaceShape(shape)}
+                className={`shrink-0 md:w-full text-left px-3 py-2 md:py-3 rounded-full md:rounded-xl border transition-all ${
+                  faceShape === shape
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                    : 'bg-white text-gray-700 border-gray-200 hover:border-blue-400 hover:bg-blue-50'
+                }`}>
+                <div className="flex items-center gap-2 whitespace-nowrap">
+                  {React.createElement(FACE_SHAPE_ICONS[shape], { className: 'w-5 h-5 flex-shrink-0' })}
+                  <div>
+                    <p className="font-semibold text-sm">{FACE_SHAPE_LABELS[shape]}</p>
+                    <p className={`hidden md:block text-xs mt-0.5 ${faceShape === shape ? 'text-blue-100' : 'text-gray-400'}`}>
+                      {FACE_SHAPE_DESCRIPTIONS[shape]}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </button>
-          ))}
+              </button>
+            ))}
+          </div>
 
-          {/* 類型篩選 */}
-          <div className="mt-4 pt-4 border-t">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">類型篩選</p>
+          {/* 類型篩選：手機＝分段按鈕列；桌機＝直立清單 */}
+          <div className="md:mt-4 md:pt-4 md:border-t flex md:block items-center gap-1.5">
+            <p className="hidden md:block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">類型篩選</p>
             {([['all', '全部'], ['glasses', '眼鏡框'], ['lens', '隱形眼鏡']] as const).map(([v, label]) => (
               <button key={v} onClick={() => setFilterType(v)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm mb-1 ${
-                  filterType === v ? 'bg-gray-100 font-semibold text-gray-900' : 'text-gray-600 hover:bg-gray-50'
+                className={`shrink-0 md:w-full text-center md:text-left px-3 py-1.5 md:py-2 rounded-full md:rounded-lg text-xs md:text-sm md:mb-1 border md:border-0 ${
+                  filterType === v
+                    ? 'bg-gray-900 text-white border-gray-900 md:bg-gray-100 md:text-gray-900 md:font-semibold'
+                    : 'text-gray-600 border-gray-200 hover:bg-gray-50'
                 }`}>
                 {label}
               </button>
@@ -178,7 +183,7 @@ export default function FaceShapeRecommendation({ detectedFaceShape, onSelectIte
                     }`}>
 
                     {/* 圖片 */}
-                    <div className="aspect-square bg-gray-50 rounded-t-2xl overflow-hidden relative">
+                    <div className="aspect-[4/3] md:aspect-square bg-gray-50 rounded-t-2xl overflow-hidden relative">
                       <img src={imgSrc(item.image_url)} alt={item.name}
                         className="w-full h-full object-contain p-4" />
 

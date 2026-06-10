@@ -25,19 +25,23 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ currentRole, userName, activeTab, setActiveTab, isOpen = false, onClose }) => {
   const menuItems = [
-    { id: 'dashboard', label: '數據儀表板', Icon: IconDashboard, roles: [UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT] },
-    { id: 'courses', label: '我的課程', Icon: IconBook, roles: [UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT] },
-    { id: 'materials', label: '教材管理', Icon: IconFile, roles: [UserRole.TEACHER, UserRole.ADMIN] },
-    { id: 'ai-chat', label: '課業問答', Icon: IconChat, roles: [UserRole.TEACHER, UserRole.STUDENT] },
-    { id: 'knowledge-mgmt', label: '問答管理', Icon: IconFile, roles: [UserRole.TEACHER, UserRole.ADMIN] },
-    { id: 'student-status', label: '學習狀況', Icon: IconChart, roles: [UserRole.TEACHER, UserRole.ADMIN] },
-    { id: 'ar-practice', label: 'AR 模擬練習', Icon: IconEye, roles: [UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT], external: '/ar/index.html' },
-    { id: 'face-recommend', label: '臉型眼鏡推薦', Icon: IconEye, roles: [UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT] },
-    { id: 'glasses-mgmt', label: '眼鏡素材管理', Icon: IconFile, roles: [UserRole.TEACHER, UserRole.ADMIN] },
-    { id: 'exams', label: '測驗系統', Icon: IconZap, roles: [UserRole.TEACHER, UserRole.STUDENT] },
-    { id: 'admin-users', label: '用戶管理', Icon: IconUser, roles: [UserRole.ADMIN, UserRole.TEACHER] },
-    { id: 'manual', label: '操作說明', Icon: IconInfo, roles: [UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT] },
-    { id: 'admin', label: '系統架構', Icon: IconSettings, roles: [UserRole.ADMIN] },
+    { id: 'dashboard', label: '數據儀表板', Icon: IconDashboard, section: '', roles: [UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT] },
+    { id: 'courses', label: '我的課程', Icon: IconBook, section: '', roles: [UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT] },
+    // 學習
+    { id: 'ai-chat', label: '課業問答', Icon: IconChat, section: '學習', roles: [UserRole.TEACHER, UserRole.STUDENT] },
+    { id: 'exams', label: '測驗系統', Icon: IconZap, section: '學習', roles: [UserRole.TEACHER, UserRole.STUDENT] },
+    // 教學管理（老師/管理員）
+    { id: 'materials', label: '教材管理', Icon: IconFile, section: '教學管理', roles: [UserRole.TEACHER, UserRole.ADMIN] },
+    { id: 'knowledge-mgmt', label: '問答管理', Icon: IconFile, section: '教學管理', roles: [UserRole.TEACHER, UserRole.ADMIN] },
+    { id: 'student-status', label: '學習狀況', Icon: IconChart, section: '教學管理', roles: [UserRole.TEACHER, UserRole.ADMIN] },
+    { id: 'admin-users', label: '用戶管理', Icon: IconUser, section: '教學管理', roles: [UserRole.ADMIN, UserRole.TEACHER] },
+    // AR 視光
+    { id: 'ar-practice', label: 'AR 模擬練習', Icon: IconEye, section: 'AR 視光', roles: [UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT], external: '/ar/index.html' },
+    { id: 'face-recommend', label: '臉型眼鏡推薦', Icon: IconEye, section: 'AR 視光', roles: [UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT] },
+    { id: 'glasses-mgmt', label: '眼鏡素材管理', Icon: IconFile, section: 'AR 視光', roles: [UserRole.TEACHER, UserRole.ADMIN] },
+    // 其他
+    { id: 'manual', label: '操作說明', Icon: IconInfo, section: '其他', roles: [UserRole.ADMIN, UserRole.TEACHER, UserRole.STUDENT] },
+    { id: 'admin', label: '系統架構', Icon: IconSettings, section: '其他', roles: [UserRole.ADMIN] },
   ] as const;
 
   const filteredMenu = menuItems.filter(item => (item.roles as readonly UserRole[]).includes(currentRole));
@@ -59,11 +63,16 @@ const Sidebar: React.FC<SidebarProps> = ({ currentRole, userName, activeTab, set
       </div>
 
       <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto">
-        {filteredMenu.map((item) => {
+        {filteredMenu.map((item, idx) => {
           const ActiveIcon = item.Icon;
+          const prevSection = idx > 0 ? filteredMenu[idx - 1].section : '';
+          const showHeader = item.section && item.section !== prevSection;
           return (
+            <React.Fragment key={item.id}>
+            {showHeader && (
+              <p className="px-4 pt-3 pb-0.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">{item.section}</p>
+            )}
             <button
-              key={item.id}
               onClick={() => handleNav(item)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === item.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
@@ -77,6 +86,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentRole, userName, activeTab, set
                 </svg>
               )}
             </button>
+            </React.Fragment>
           );
         })}
       </nav>
