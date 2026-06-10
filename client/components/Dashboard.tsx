@@ -126,11 +126,12 @@ export default function Dashboard({ role, onNavigate }: { role: UserRole; onNavi
       {/* 快速操作 */}
       <div className="bg-white rounded-2xl border border-slate-200 p-4 md:p-5">
         <h3 className="font-bold text-slate-700 text-sm mb-3">快速操作</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {[
             { label: '教材管理', desc: '上傳課程教材', icon: '📄', color: 'bg-blue-50 border-blue-100 hover:bg-blue-100', tab: 'materials' },
             { label: '問答管理', desc: '新增知識庫問答', icon: '💬', color: 'bg-indigo-50 border-indigo-100 hover:bg-indigo-100', tab: 'knowledge-mgmt' },
             { label: '測驗系統', desc: '出題與測驗', icon: '📝', color: 'bg-amber-50 border-amber-100 hover:bg-amber-100', tab: 'exams' },
+            { label: '學習狀況', desc: '學生活動與預警', icon: '📈', color: 'bg-emerald-50 border-emerald-100 hover:bg-emerald-100', tab: 'student-status' },
           ].map(action => (
             <button
               type="button"
