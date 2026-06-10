@@ -72,3 +72,14 @@ export async function pollMaterialStatus(materialId: string, interval = 2000, ma
   }
   throw new Error('教材處理超時');
 }
+
+/** 把教材移轉（套用）到另一門課程 */
+export async function moveMaterial(materialId: string, toCourseId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/materials/${materialId}/move`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+    body: JSON.stringify({ toCourseId }),
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error);
+}

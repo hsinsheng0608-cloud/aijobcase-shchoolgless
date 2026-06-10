@@ -70,3 +70,13 @@ export async function joinCourse(courseId: string): Promise<void> {
   const data = await res.json();
   if (!data.success) throw new Error(data.error);
 }
+
+/** 刪除課程（老師限自己的課；教材與選課紀錄連動刪除） */
+export async function deleteCourse(courseId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/courses/${courseId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error);
+}

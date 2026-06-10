@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { UserRole, Course } from '../types';
 import { IconBook, IconUser, IconZap, IconGraduation, IconPlus } from './Icons';
-import { getCourses, createCourse, getAllCourses, joinCourse } from '../services/courseService';
-import { uploadMaterial, pollMaterialStatus } from '../services/materialService';
+import { getCourses, createCourse, getAllCourses, joinCourse, updateCourse, deleteCourse } from '../services/courseService';
+import { uploadMaterial, pollMaterialStatus, getMaterials, moveMaterial } from '../services/materialService';
+import { Material } from '../types';
 
 interface CourseListProps {
   userRole: UserRole;
@@ -20,6 +21,7 @@ const CourseList: React.FC<CourseListProps> = ({ userRole, onSelectCourse }) => 
   const [creating, setCreating] = useState(false);
   const [createHint, setCreateHint] = useState('');
   const [joiningId, setJoiningId] = useState<string | null>(null);
+  const [manageCourse, setManageCourse] = useState<Course | null>(null);
 
   const isStudent = userRole === UserRole.STUDENT;
 
@@ -132,10 +134,18 @@ const CourseList: React.FC<CourseListProps> = ({ userRole, onSelectCourse }) => 
             )}
             {course.description && <p className="text-sm text-slate-500 mb-4">{course.description}</p>}
 
-            <button onClick={() => onSelectCourse(course.id)}
-              className="w-full bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 flex items-center justify-center gap-2">
-              <IconZap className="w-4 h-4" /> 進入該課程
-            </button>
+            <div className="flex gap-2">
+              <button onClick={() => onSelectCourse(course.id)}
+                className="flex-1 bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 flex items-center justify-center gap-2">
+                <IconZap className="w-4 h-4" /> 進入該課程
+              </button>
+              {!isStudent && (
+                <button onClick={() => setManageCourse(course)} title="管理課程（編輯/教材/刪除）"
+                  className="px-3.5 py-2.5 rounded-xl text-sm font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                  管理
+                </button>
+              )}
+            </div>
           </div>
         ))}
         {(isStudent ? courses.filter(c => c.joined) : courses).length === 0 && (
@@ -178,6 +188,164 @@ const CourseList: React.FC<CourseListProps> = ({ userRole, onSelectCourse }) => 
           </div>
         </>
       )}
+
+      {manageCourse && (
+        <CourseManageModal
+          course={manageCourse}
+          otherCourses={courses.filter(c => c.id !== manageCourse.id)}
+          onClose={() => setManageCourse(null)}
+          onUpdated={(c) => setCourses(prev => prev.map(x => x.id === c.id ? { ...x, ...c } : x))}
+          onDeleted={(id) => { setCourses(prev => prev.filter(x => x.id !== id)); setManageCourse(null); }}
+        />
+      )}
+    </div>
+  );
+};
+
+/** 課程管理彈窗：編輯資訊 / 教材上傳與套用 / 刪除課程 */
+const CourseManageModal: React.FC<{
+  course: Course;
+  otherCourses: Course[];
+  onClose: () => void;
+  onUpdated: (c: Course) => void;
+  onDeleted: (id: string) => void;
+}> = ({ course, otherCourses, onClose, onUpdated, onDeleted }) => {
+  const [name, setName] = useState(course.name);
+  const [desc, setDesc] = useState(course.description || '');
+  const [saving, setSaving] = useState(false);
+  const [mats, setMats] = useState<Material[]>([]);
+  const [upFile, setUpFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState('');
+  const [srcCourseId, setSrcCourseId] = useState('');
+  const [srcMats, setSrcMats] = useState<Material[]>([]);
+
+  const loadMats = () => { getMaterials(course.id).then(setMats).catch(() => {}); };
+  useEffect(loadMats, [course.id]);
+  useEffect(() => {
+    if (srcCourseId) getMaterials(srcCourseId).then(setSrcMats).catch(() => setSrcMats([]));
+    else setSrcMats([]);
+  }, [srcCourseId]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const updated = await updateCourse(course.id, { name, description: desc });
+      onUpdated(updated);
+    } catch (e: any) { alert('儲存失敗: ' + e.message); }
+    finally { setSaving(false); }
+  };
+
+  const handleUpload = async () => {
+    if (!upFile) return;
+    setBusy('上傳並建立 AI 索引中…');
+    try {
+      const { materialId } = await uploadMaterial(course.id, upFile);
+      const r = await pollMaterialStatus(materialId);
+      if (r.status !== 'READY') alert('教材處理失敗: ' + (r.error_message || ''));
+      setUpFile(null);
+      loadMats();
+    } catch (e: any) { alert('上傳失敗: ' + e.message); }
+    finally { setBusy(''); }
+  };
+
+  const handleApply = async (m: Material) => {
+    setBusy(`套用「${m.title}」中…`);
+    try {
+      await moveMaterial(m.id, course.id);
+      setSrcMats(prev => prev.filter(x => x.id !== m.id));
+      loadMats();
+    } catch (e: any) { alert('套用失敗: ' + e.message); }
+    finally { setBusy(''); }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm(`確定刪除課程「${course.name}」？\n課程的教材、AI 索引與學生選課紀錄會一併刪除，無法復原。`)) return;
+    try {
+      await deleteCourse(course.id);
+      onDeleted(course.id);
+    } catch (e: any) { alert('刪除失敗: ' + e.message); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}></div>
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl relative max-h-[88vh] flex flex-col overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0">
+          <h3 className="text-lg font-bold text-slate-800">管理課程</h3>
+          <button onClick={onClose} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-full text-xl leading-none">✕</button>
+        </div>
+        <div className="p-6 space-y-6 overflow-y-auto">
+          {/* 編輯資訊 */}
+          <section className="space-y-2">
+            <h4 className="text-xs font-bold text-slate-500">課程資訊</h4>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="課程名稱"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+            <input value={desc} onChange={e => setDesc(e.target.value)} placeholder="課程描述"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+            <button onClick={handleSave} disabled={saving || !name.trim()}
+              className="bg-indigo-600 text-white px-5 py-2 rounded-xl text-sm font-bold disabled:opacity-50">
+              {saving ? '儲存中…' : '儲存變更'}
+            </button>
+          </section>
+
+          {/* 本課程教材 */}
+          <section className="space-y-2">
+            <h4 className="text-xs font-bold text-slate-500">課程教材（{mats.length}）</h4>
+            {mats.length > 0 ? (
+              <ul className="space-y-1">
+                {mats.map(m => (
+                  <li key={m.id} className="flex items-center gap-2 text-sm text-slate-700 bg-slate-50 rounded-lg px-3 py-2">
+                    <span className="truncate flex-1">{m.title}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 ${m.status === 'READY' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {m.status === 'READY' ? '已就緒' : m.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="text-xs text-slate-400">尚無教材</p>}
+            <div className="flex items-center gap-2 pt-1">
+              <input type="file" accept=".pdf,.docx,.pptx,.xlsx,.xls"
+                onChange={e => setUpFile(e.target.files?.[0] ?? null)}
+                className="flex-1 text-xs text-slate-600 file:mr-2 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-600 file:text-xs file:font-bold file:cursor-pointer" />
+              <button onClick={handleUpload} disabled={!upFile || !!busy}
+                className="bg-indigo-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold disabled:opacity-40 shrink-0">上傳</button>
+            </div>
+          </section>
+
+          {/* 套用其他課程教材 */}
+          {otherCourses.length > 0 && (
+            <section className="space-y-2">
+              <h4 className="text-xs font-bold text-slate-500">套用其他課程的教材（移轉到本課程）</h4>
+              <select value={srcCourseId} onChange={e => setSrcCourseId(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none">
+                <option value="">選擇來源課程…</option>
+                {otherCourses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              {srcCourseId && (srcMats.length > 0 ? (
+                <ul className="space-y-1">
+                  {srcMats.map(m => (
+                    <li key={m.id} className="flex items-center gap-2 text-sm text-slate-700 bg-slate-50 rounded-lg px-3 py-2">
+                      <span className="truncate flex-1">{m.title}</span>
+                      <button onClick={() => handleApply(m)} disabled={!!busy}
+                        className="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1 rounded-lg shrink-0 disabled:opacity-40">套用 →</button>
+                    </li>
+                  ))}
+                </ul>
+              ) : <p className="text-xs text-slate-400">該課程沒有教材</p>)}
+            </section>
+          )}
+
+          {busy && <p className="text-xs text-indigo-600 animate-pulse">{busy}</p>}
+
+          {/* 危險區 */}
+          <section className="border-t border-slate-100 pt-4">
+            <button onClick={handleDelete}
+              className="w-full py-2.5 rounded-xl bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 text-sm font-bold transition">
+              🗑 刪除課程（教材與選課紀錄一併刪除）
+            </button>
+          </section>
+        </div>
+      </div>
     </div>
   );
 };
