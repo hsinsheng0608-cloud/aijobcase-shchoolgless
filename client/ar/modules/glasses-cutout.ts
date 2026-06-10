@@ -125,7 +125,12 @@ async function makeLensTransparent(blob: Blob): Promise<Blob> {
         if (cy < h - 1 && label[cp + w] === -1 && deep[cp + w]) { label[cp + w] = id; qx[tail] = cx; qy[tail] = cy + 1; tail++; }
       }
       if (members.length >= minArea) {
-        for (const m of members) d[m * 4 + 3] = Math.round(d[m * 4 + 3] * 0.10);
+        for (const m of members) {
+          // 顏色洗成中性白＋6% 透明度：保留鏡片光澤感，但看不出照片內容
+          const o = m * 4;
+          d[o] = 245; d[o + 1] = 246; d[o + 2] = 248;
+          d[o + 3] = Math.round(d[o + 3] * 0.06);
+        }
       }
     }
     // 去白邊（defringe）：去背殘留的半透明淺色光暈再壓低，鏡框邊緣才乾淨
