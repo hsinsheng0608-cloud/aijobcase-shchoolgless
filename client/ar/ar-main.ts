@@ -1028,36 +1028,45 @@ async function makeLensTransparent(blob: Blob): Promise<Blob> {
     // 二值 alpha 遮罩（眼鏡=1）
     const a = new Uint8Array(n);
     for (let i = 0; i < n; i++) a[i] = d[i * 4 + 3] > 24 ? 1 : 0;
-    // 侵蝕半徑：要大於鏡框粗細、小於鏡片半徑（細框被侵蝕掉、鏡片核心留下）
-    const R = Math.max(8, Math.round(Math.min(w, h) * 0.06));
-    // 可分離侵蝕（水平 → 垂直），有早退出加速
+    // 1) 侵蝕找「鏡片核心」（半徑要小於鏡片、大於鏡框粗細）
+    const R = Math.max(6, Math.round(Math.min(w, h) * 0.045));
     const tmp = new Uint8Array(n);
     for (let y = 0; y < h; y++) {
       const row = y * w;
       for (let x = 0; x < w; x++) {
         let m = 1;
-        for (let k = -R; k <= R; k++) {
-          const xx = x + k;
-          if (xx < 0 || xx >= w || a[row + xx] === 0) { m = 0; break; }
-        }
+        for (let k = -R; k <= R; k++) { const xx = x + k; if (xx < 0 || xx >= w || a[row + xx] === 0) { m = 0; break; } }
         tmp[row + x] = m;
       }
     }
-    const inner = new Uint8Array(n);
+    const core = new Uint8Array(n);
     for (let x = 0; x < w; x++) {
       for (let y = 0; y < h; y++) {
         let m = 1;
-        for (let k = -R; k <= R; k++) {
-          const yy = y + k;
-          if (yy < 0 || yy >= h || tmp[yy * w + x] === 0) { m = 0; break; }
-        }
-        inner[y * w + x] = m;
+        for (let k = -R; k <= R; k++) { const yy = y + k; if (yy < 0 || yy >= h || tmp[yy * w + x] === 0) { m = 0; break; } }
+        core[y * w + x] = m;
       }
     }
-    // 鏡片內部 → 大幅透明化（10%），戴上後眼睛清楚可見
-    for (let i = 0; i < n; i++) {
-      if (inner[i]) d[i * 4 + 3] = Math.round(d[i * 4 + 3] * 0.10);
+    // 2) 把核心「膨脹」回去（R+輕微外擴），補回侵蝕掉的鏡片邊緣，直貼鏡框內緣
+    const R2 = R + Math.max(3, Math.round(R * 0.4));
+    const dil1 = new Uint8Array(n);
+    for (let y = 0; y < h; y++) {
+      const row = y * w;
+      for (let x = 0; x < w; x++) {
+        let m = 0;
+        for (let k = -R2; k <= R2; k++) { const xx = x + k; if (xx >= 0 && xx < w && core[row + xx]) { m = 1; break; } }
+        dil1[row + x] = m;
+      }
     }
+    const lens = new Uint8Array(n);
+    for (let x = 0; x < w; x++) {
+      for (let y = 0; y < h; y++) {
+        let m = 0;
+        for (let k = -R2; k <= R2; k++) { const yy = y + k; if (yy >= 0 && yy < h && dil1[yy * w + x]) { m = 1; break; } }
+        lens[y * w + x] = m && a[y * w + x] ? 1 : 0;
+      }
+    }
+    for (let i = 0; i < n; i++) if (lens[i]) d[i * 4 + 3] = Math.round(d[i * 4 + 3] * 0.10);
     // 去白邊（defringe）：去背殘留的半透明淺色光暈再壓低，鏡框邊緣才乾淨
     for (let i = 0; i < n; i++) {
       const o = i * 4, a = d[o + 3];

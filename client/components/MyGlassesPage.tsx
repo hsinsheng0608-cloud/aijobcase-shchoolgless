@@ -77,7 +77,8 @@ async function makeLensTransparent(blob: Blob): Promise<Blob> {
     const d = imgData.data, n = w * h;
     const a = new Uint8Array(n);
     for (let i = 0; i < n; i++) a[i] = d[i * 4 + 3] > 24 ? 1 : 0;
-    const R = Math.max(8, Math.round(Math.min(w, h) * 0.06));
+    // 1) 侵蝕找「鏡片核心」（半徑要小於鏡片、大於鏡框粗細）
+    const R = Math.max(6, Math.round(Math.min(w, h) * 0.045));
     const tmp = new Uint8Array(n);
     for (let y = 0; y < h; y++) {
       const row = y * w;
@@ -87,15 +88,34 @@ async function makeLensTransparent(blob: Blob): Promise<Blob> {
         tmp[row + x] = m;
       }
     }
-    const inner = new Uint8Array(n);
+    const core = new Uint8Array(n);
     for (let x = 0; x < w; x++) {
       for (let y = 0; y < h; y++) {
         let m = 1;
         for (let k = -R; k <= R; k++) { const yy = y + k; if (yy < 0 || yy >= h || tmp[yy * w + x] === 0) { m = 0; break; } }
-        inner[y * w + x] = m;
+        core[y * w + x] = m;
       }
     }
-    for (let i = 0; i < n; i++) if (inner[i]) d[i * 4 + 3] = Math.round(d[i * 4 + 3] * 0.10);
+    // 2) 把核心「膨脹」回去（R+輕微外擴），補回侵蝕掉的鏡片邊緣，直貼鏡框內緣
+    const R2 = R + Math.max(3, Math.round(R * 0.4));
+    const dil1 = new Uint8Array(n);
+    for (let y = 0; y < h; y++) {
+      const row = y * w;
+      for (let x = 0; x < w; x++) {
+        let m = 0;
+        for (let k = -R2; k <= R2; k++) { const xx = x + k; if (xx >= 0 && xx < w && core[row + xx]) { m = 1; break; } }
+        dil1[row + x] = m;
+      }
+    }
+    const lens = new Uint8Array(n);
+    for (let x = 0; x < w; x++) {
+      for (let y = 0; y < h; y++) {
+        let m = 0;
+        for (let k = -R2; k <= R2; k++) { const yy = y + k; if (yy >= 0 && yy < h && dil1[yy * w + x]) { m = 1; break; } }
+        lens[y * w + x] = m && a[y * w + x] ? 1 : 0;
+      }
+    }
+    for (let i = 0; i < n; i++) if (lens[i]) d[i * 4 + 3] = Math.round(d[i * 4 + 3] * 0.10);
     // 去白邊
     for (let i = 0; i < n; i++) {
       const o = i * 4, al = d[o + 3];
@@ -159,10 +179,10 @@ const MyGlassesPage: React.FC = () => {
           },
         });
       } catch { cut = small; }
+      setBusy('裁切中…');
+      const croppedFirst = await cropToContent(cut);
       setBusy('鏡片透明化…');
-      const lensed = await makeLensTransparent(cut);
-      setBusy('裁切上傳中…');
-      const cropped = await cropToContent(lensed);
+      const cropped = await makeLensTransparent(croppedFirst);
       const fd = new FormData();
       fd.append('image', cropped, 'my-glasses.png');
       fd.append('kind', 'glasses');
