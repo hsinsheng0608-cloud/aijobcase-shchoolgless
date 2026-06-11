@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import MaterialManagement from './components/MaterialManagement';
@@ -33,6 +33,12 @@ const App: React.FC = () => {
     localStorage.setItem('edumind_onboarded', 'true');
     setShowOnboarding(false);
   };
+
+  // 啟動時驗證 token（JWT 24h 過期）：失效自動登出回登入頁
+  useEffect(() => {
+    if (!user) return;
+    authService.validateSession().then(ok => { if (!ok) setUser(null); });
+  }, []);
 
   if (!user) {
     return <>

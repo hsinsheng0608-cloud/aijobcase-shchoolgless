@@ -21,6 +21,22 @@ export class AuthService {
     return this.currentUser;
   }
 
+  /**
+   * 驗證 localStorage 裡的 token 是否仍有效（JWT 24h 過期）。
+   * 失效就清掉 session 回傳 false → App 導回登入頁，
+   * 避免「看起來登入了但所有 API 默默 401、儀表板永遠載入中」。
+   */
+  async validateSession(): Promise<boolean> {
+    if (!this.currentUser || !localStorage.getItem('edumind_token')) return false;
+    try {
+      const res = await fetch(`${API_BASE}/auth/me`, { headers: getAuthHeaders() });
+      if (res.status === 401 || res.status === 403) { this.logout(); return false; }
+      return true;  // 200 或暫時性錯誤（後端冷啟動）都先放行
+    } catch {
+      return true;  // 離線/網路錯誤不強制登出
+    }
+  }
+
   async login(studentId: string, password: string): Promise<User> {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
