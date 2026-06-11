@@ -578,7 +578,7 @@ function getArContext(): string {
   if (sessionActive) {
     parts.push(`練習${sessionPaused ? '暫停' : '進行中'}（用時 ${timerDisplay.textContent}）`);
   } else {
-    parts.push('練習尚未開始（可按下方「開始練習」啟動逐步引導）');
+    parts.push('練習尚未開始（可從右上「⋯更多 → 開始練習」啟動逐步引導）');
   }
 
   const pd = document.getElementById('tab-optics-pd')?.textContent;
@@ -725,6 +725,16 @@ function updateTimer() {
   timerDisplay.textContent = `${mm}:${ss}`;
 }
 
+// 「⋯更多 → 開始練習」：顯示控制列並啟動練習（控制列平常收起，避免擋畫面）
+const controlBar = document.getElementById('control-bar')!;
+document.getElementById('btn-start-practice')?.addEventListener('click', () => {
+  document.getElementById('more-menu')?.classList.add('hidden');
+  document.body.classList.remove('more-menu-open');
+  controlBar.classList.remove('hidden');
+  controlBar.classList.add('flex');
+  if (!sessionActive) btnStart.click();
+});
+
 btnStart.addEventListener('click', async () => {
   clearOpticsAcc();
   await recorder.startSession();
@@ -771,6 +781,8 @@ btnEnd.addEventListener('click', async () => {
   btnResume.classList.add('hidden');
   btnStart.classList.remove('hidden');
   stepsList.classList.add('hidden');  // 收起步驟卡
+  controlBar.classList.add('hidden');  // 練習結束 → 控制列收回「⋯更多」
+  controlBar.classList.remove('flex');
 
   addChatMessage(
     `練習結束！完成 ${completed}/6 步驟，用時 ${timerDisplay.textContent}`,
@@ -1266,8 +1278,11 @@ btnSaveShot?.addEventListener('click', () => {
   if (!ctx) return;
   // 1) 鏡頭（鏡像 + cover）
   drawVideoCover(ctx, video, w, h);
-  // 2) 鏡片 canvas（鏡像，stretch）
-  ctx.save(); ctx.translate(w, 0); ctx.scale(-1, 1); ctx.drawImage(canvas, 0, 0, w, h); ctx.restore();
+  // 2) 鏡片 canvas（鏡像，stretch）；隱眼模式跟畫面一樣用 multiply 融合
+  ctx.save(); ctx.translate(w, 0); ctx.scale(-1, 1);
+  if (renderer.getMode() === 'contact') ctx.globalCompositeOperation = 'multiply';
+  ctx.drawImage(canvas, 0, 0, w, h);
+  ctx.restore();
   // 3) 眼鏡 WebGL canvas（不鏡像）
   ctx.drawImage(glasses3DCanvas, 0, 0, w, h);
   // 下載
