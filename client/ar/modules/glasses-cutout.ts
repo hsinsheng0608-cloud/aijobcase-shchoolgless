@@ -70,6 +70,39 @@ async function makeLensTransparent(blob: Blob): Promise<Blob> {
     const a = new Uint8Array(n);
     for (let i = 0; i < n; i++) a[i] = d[i * 4 + 3] > 24 ? 1 : 0;
 
+    // 先清「漂浮小島」：照片裡透過鏡片看到的雜物（線材、反光物）去背後
+    // 會變成與鏡框不相連的獨立不透明塊 → 只保留最大連通塊（鏡框本體），
+    // 其餘面積 < 最大塊 35% 的孤島一律洗成近透明
+    {
+      const lbl = new Int32Array(n).fill(-1);
+      const qs = new Int32Array(n);
+      const areas: number[] = [];
+      let id = 0;
+      for (let p0 = 0; p0 < n; p0++) {
+        if (lbl[p0] !== -1 || !a[p0]) continue;
+        let head = 0, tail = 0, area = 0;
+        qs[tail++] = p0; lbl[p0] = id;
+        while (head < tail) {
+          const cp = qs[head++]; area++;
+          const cx = cp % w;
+          if (cx > 0 && lbl[cp - 1] === -1 && a[cp - 1]) { lbl[cp - 1] = id; qs[tail++] = cp - 1; }
+          if (cx < w - 1 && lbl[cp + 1] === -1 && a[cp + 1]) { lbl[cp + 1] = id; qs[tail++] = cp + 1; }
+          if (cp >= w && lbl[cp - w] === -1 && a[cp - w]) { lbl[cp - w] = id; qs[tail++] = cp - w; }
+          if (cp < n - w && lbl[cp + w] === -1 && a[cp + w]) { lbl[cp + w] = id; qs[tail++] = cp + w; }
+        }
+        areas.push(area); id++;
+      }
+      const maxArea = Math.max(0, ...areas);
+      for (let i = 0; i < n; i++) {
+        if (a[i] && areas[lbl[i]] < maxArea * 0.35) {
+          const o = i * 4;
+          d[o] = 245; d[o + 1] = 246; d[o + 2] = 248;
+          d[o + 3] = Math.round(d[o + 3] * 0.06);
+          a[i] = 0; // 後面的鏡片偵測把這裡視為透明
+        }
+      }
+    }
+
     // 距離變換（chamfer 3-4）：每個不透明像素到「透明區」的距離
     // 鏡框是細條 → 距離小；鏡片內部（殘留背景）→ 距離大，可精準分離
     const INF = 1 << 28;

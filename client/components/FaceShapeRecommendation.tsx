@@ -119,11 +119,11 @@ export default function FaceShapeRecommendation({ detectedFaceShape, onSelectIte
                     ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                     : 'bg-white text-gray-700 border-gray-200 hover:border-blue-400 hover:bg-blue-50'
                 }`}>
-                <div className="flex items-center gap-2 whitespace-nowrap">
+                <div className="flex items-center gap-2 min-w-0">
                   {React.createElement(FACE_SHAPE_ICONS[shape], { className: 'w-5 h-5 flex-shrink-0' })}
-                  <div>
-                    <p className="font-semibold text-sm">{FACE_SHAPE_LABELS[shape]}</p>
-                    <p className={`hidden md:block text-xs mt-0.5 ${faceShape === shape ? 'text-blue-100' : 'text-gray-400'}`}>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm whitespace-nowrap">{FACE_SHAPE_LABELS[shape]}</p>
+                    <p className={`hidden md:block text-xs mt-0.5 break-words ${faceShape === shape ? 'text-blue-100' : 'text-gray-400'}`}>
                       {FACE_SHAPE_DESCRIPTIONS[shape]}
                     </p>
                   </div>
