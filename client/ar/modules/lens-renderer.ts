@@ -54,17 +54,11 @@ export class LensRenderer {
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d')!;
-    this.setMode(this.mode);  // 套用初始模式的混合方式
   }
 
   setColor(color: LensColor) { this.color = color; this.lensImageUrl = null; }
   setLensImage(url: string | null) { this.lensImageUrl = url; }
-  setMode(mode: RenderMode) {
-    this.mode = mode;
-    // 隱眼用 multiply 跟底下 video 的真實虹膜紋理/光澤融合（canvas 內部 GCO 吃不到
-    // video 像素，必須用 CSS 混合）；眼鏡要原色 → normal
-    this.canvas.style.mixBlendMode = mode === 'contact' ? 'multiply' : 'normal';
-  }
+  setMode(mode: RenderMode) { this.mode = mode; }
   setGlassesStyle(style: string) { this.glassesStyle = style; }
   getMode(): RenderMode { return this.mode; }
   setGlassesScale(scale: number) { this.glassesScale = scale; }
@@ -81,55 +75,6 @@ export class LensRenderer {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
-  // 暫存畫布：給鏡片邊緣羽化用（避免每幀建立）
-  private scratch: HTMLCanvasElement | null = null;
-
-  /** 眼瞼遮擋：沿眼睛輪廓 6 點畫平滑封閉路徑（略外擴），鏡片只畫在眼縫內 */
-  private clipToEyeOpening(eye: EyeData) {
-    const ctx = this.ctx;
-    const pts = eye.contour;
-    if (!pts || pts.length < 4) return;
-    const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
-    const cy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
-    const EXPAND = 1.18;  // 略外擴：避免邊界裁太硬、容忍偵測誤差
-    const ep = pts.map(p => ({ x: cx + (p.x - cx) * EXPAND, y: cy + (p.y - cy) * EXPAND }));
-    ctx.beginPath();
-    // 以「相鄰點中點」為錨、原點為控制點 → 平滑閉合曲線
-    const mid = (a: { x: number; y: number }, b: { x: number; y: number }) =>
-      ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
-    let m = mid(ep[ep.length - 1], ep[0]);
-    ctx.moveTo(m.x, m.y);
-    for (let i = 0; i < ep.length; i++) {
-      const next = ep[(i + 1) % ep.length];
-      m = mid(ep[i], next);
-      ctx.quadraticCurveTo(ep[i].x, ep[i].y, m.x, m.y);
-    }
-    ctx.closePath();
-    ctx.clip();
-  }
-
-  /** 把彩片圖畫進暫存畫布並做圓形邊緣羽化，回傳可直接貼上的羽化鏡片 */
-  private featheredLens(img: HTMLImageElement, d: number): HTMLCanvasElement | null {
-    if (!this.scratch) this.scratch = document.createElement('canvas');
-    const sc = this.scratch;
-    const size = Math.max(2, Math.ceil(d));
-    if (sc.width !== size) { sc.width = size; sc.height = size; }
-    const sctx = sc.getContext('2d');
-    if (!sctx) return null;
-    sctx.clearRect(0, 0, size, size);
-    sctx.drawImage(img, 0, 0, size, size);
-    // destination-in + 放射漸層：邊緣 12% 漸隱，去掉「貼紙感」
-    const r = size / 2;
-    const g = sctx.createRadialGradient(r, r, r * 0.82, r, r, r);
-    g.addColorStop(0, 'rgba(0,0,0,1)');
-    g.addColorStop(1, 'rgba(0,0,0,0)');
-    sctx.globalCompositeOperation = 'destination-in';
-    sctx.fillStyle = g;
-    sctx.fillRect(0, 0, size, size);
-    sctx.globalCompositeOperation = 'source-over';
-    return sc;
-  }
-
   private renderContactLens(eye: EyeData) {
     const ctx = this.ctx;
     const { irisCenter, irisRadius } = eye;
@@ -138,17 +83,16 @@ export class LensRenderer {
     const lensRadius = Math.min(irisRadius, maxIris) * this.lensScale;
 
     ctx.save();
-    this.clipToEyeOpening(eye);  // 眼皮遮擋：閉眼/半閉時鏡片跟著被蓋住
 
     // Product image overlay mode
     if (this.lensImageUrl) {
       const img = loadLensImage(this.lensImageUrl);
       if (img.complete && img.naturalWidth) {
         const d = lensRadius * 2;
-        const lens = this.featheredLens(img, d);
+        // multiply: dark ring tints the real iris, white/transparent areas show through
+        ctx.globalCompositeOperation = 'multiply';
         ctx.globalAlpha = 0.92;
-        if (lens) ctx.drawImage(lens, irisCenter.x - lensRadius, irisCenter.y - lensRadius, d, d);
-        else ctx.drawImage(img, irisCenter.x - lensRadius, irisCenter.y - lensRadius, d, d);
+        ctx.drawImage(img, irisCenter.x - lensRadius, irisCenter.y - lensRadius, d, d);
         ctx.restore();
         return;
       }

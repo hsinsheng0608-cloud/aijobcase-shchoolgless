@@ -1278,11 +1278,8 @@ btnSaveShot?.addEventListener('click', () => {
   if (!ctx) return;
   // 1) 鏡頭（鏡像 + cover）
   drawVideoCover(ctx, video, w, h);
-  // 2) 鏡片 canvas（鏡像，stretch）；隱眼模式跟畫面一樣用 multiply 融合
-  ctx.save(); ctx.translate(w, 0); ctx.scale(-1, 1);
-  if (renderer.getMode() === 'contact') ctx.globalCompositeOperation = 'multiply';
-  ctx.drawImage(canvas, 0, 0, w, h);
-  ctx.restore();
+  // 2) 鏡片 canvas（鏡像，stretch）
+  ctx.save(); ctx.translate(w, 0); ctx.scale(-1, 1); ctx.drawImage(canvas, 0, 0, w, h); ctx.restore();
   // 3) 眼鏡 WebGL canvas（不鏡像）
   ctx.drawImage(glasses3DCanvas, 0, 0, w, h);
   // 下載
