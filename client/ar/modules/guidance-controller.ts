@@ -10,7 +10,8 @@ export interface Step {
   status: 'pending' | 'current' | 'completed';
 }
 
-const STEPS_TEMPLATE: Omit<Step, 'status'>[] = [
+// 隱形眼鏡配戴流程（規格項次 2）
+const CONTACT_STEPS: Omit<Step, 'status'>[] = [
   { id: 1, title: '清洗雙手', instruction: '請先用肥皂清洗雙手，確保手部乾淨無油脂。' },
   { id: 2, title: '取出鏡片', instruction: '將隱形眼鏡從保存盒中取出，放在指尖上檢查正反面。' },
   { id: 3, title: '置於指尖', instruction: '將鏡片放在食指指尖上，確認鏡片呈碗狀（邊緣向上）。' },
@@ -18,6 +19,18 @@ const STEPS_TEMPLATE: Omit<Step, 'status'>[] = [
   { id: 5, title: '戴入鏡片', instruction: '將鏡片輕輕貼合到眼球上，確認鏡片居中覆蓋瞳孔。' },
   { id: 6, title: '眨眼確認', instruction: '輕輕眨眼數次，確認鏡片位置正確、視線清晰。', autoDetect: 'blink' },
 ];
+
+// 眼鏡配戴與調整流程（規格項次 1）
+const GLASSES_STEPS: Omit<Step, 'status'>[] = [
+  { id: 1, title: '檢查鏡框', instruction: '檢查鏡框是否變形、鏡片有無刮痕，並用拭鏡布擦拭乾淨。' },
+  { id: 2, title: '雙手取鏡', instruction: '雙手握住兩側鏡腳取出眼鏡，避免單手拉扯造成鏡框變形。' },
+  { id: 3, title: '配戴上臉', instruction: '雙手平行將鏡腳滑入耳上，鏡框置於鼻樑正中。可在畫面選擇款式並用滑桿調整大小、高低。' },
+  { id: 4, title: '確認位置', instruction: '看畫面確認：瞳孔位於鏡片中心、鏡框水平不歪斜、與眉毛距離適中。', autoDetect: 'eye-open' },
+  { id: 5, title: '檢查貼合', instruction: '確認鼻墊貼合鼻樑、鏡腳鬆緊適中，低頭時眼鏡不滑落。' },
+  { id: 6, title: '視線確認', instruction: '眨眼並左右轉動視線，確認視野清晰、無暈眩或變形感。', autoDetect: 'blink' },
+];
+
+const STEPS_TEMPLATE = CONTACT_STEPS;
 
 // Eye aperture thresholds
 const EYE_OPEN_THRESHOLD = 0.35;    // aperture ratio > this = eye is wide open
@@ -28,6 +41,7 @@ type EventCallback = (type: string, stepId: number) => void;
 
 export class GuidanceController {
   private steps: Step[];
+  private template: Omit<Step, 'status'>[] = CONTACT_STEPS;
   private currentIndex = -1; // -1 = not started
   private onEvent: EventCallback;
   private blinkCount = 0;
@@ -38,6 +52,16 @@ export class GuidanceController {
   constructor(onEvent: EventCallback) {
     this.steps = STEPS_TEMPLATE.map((s) => ({ ...s, status: 'pending' as const }));
     this.onEvent = onEvent;
+  }
+
+  /** 依試戴模式載入對應流程（contact=隱形眼鏡、glasses=眼鏡），會重置進度 */
+  setMode(mode: 'contact' | 'glasses') {
+    this.template = mode === 'glasses' ? GLASSES_STEPS : CONTACT_STEPS;
+    this.steps = this.template.map((s) => ({ ...s, status: 'pending' as const }));
+    this.currentIndex = -1;
+    this.blinkCount = 0;
+    this.wasBlinking = false;
+    this.eyeOpenFrames = 0;
   }
 
   getSteps(): Step[] {
@@ -67,7 +91,7 @@ export class GuidanceController {
     this.blinkCount = 0;
     this.wasBlinking = false;
     this.eyeOpenFrames = 0;
-    this.steps = STEPS_TEMPLATE.map((s) => ({ ...s, status: 'pending' as const }));
+    this.steps = this.template.map((s) => ({ ...s, status: 'pending' as const }));
   }
 
   confirmCurrentStep() {

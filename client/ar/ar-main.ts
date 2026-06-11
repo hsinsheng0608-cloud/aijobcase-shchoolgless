@@ -728,6 +728,7 @@ function updateTimer() {
 btnStart.addEventListener('click', async () => {
   clearOpticsAcc();
   await recorder.startSession();
+  guidance.setMode(renderer.getMode() === 'glasses' ? 'glasses' : 'contact');  // 依模式載入眼鏡/隱眼流程
   guidance.reset();
   guidance.start();
   guidance.renderStepsList(stepsList);
