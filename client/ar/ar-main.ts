@@ -575,7 +575,11 @@ function getArContext(): string {
     parts.push(`AI 鏡頭辨識臉型：${zh[latestFaceResult.faceShape] || latestFaceResult.faceShape}`);
   }
 
-  // 練習計時功能已停用（control-bar 隱藏），不輸出練習狀態避免誤導 AI
+  if (sessionActive) {
+    parts.push(`練習${sessionPaused ? '暫停' : '進行中'}（用時 ${timerDisplay.textContent}）`);
+  } else {
+    parts.push('練習尚未開始（可按下方「開始練習」啟動逐步引導）');
+  }
 
   const pd = document.getElementById('tab-optics-pd')?.textContent;
   if (pd && pd !== '--') parts.push(`即時估算瞳距：${pd}`);
@@ -727,6 +731,7 @@ btnStart.addEventListener('click', async () => {
   guidance.reset();
   guidance.start();
   guidance.renderStepsList(stepsList);
+  stepsList.classList.remove('hidden');  // 顯示操作流程引導步驟卡
 
   sessionActive = true;
   sessionPaused = false;
@@ -764,6 +769,7 @@ btnEnd.addEventListener('click', async () => {
   btnPause.classList.add('hidden');
   btnResume.classList.add('hidden');
   btnStart.classList.remove('hidden');
+  stepsList.classList.add('hidden');  // 收起步驟卡
 
   addChatMessage(
     `練習結束！完成 ${completed}/6 步驟，用時 ${timerDisplay.textContent}`,
@@ -1431,3 +1437,39 @@ function showFaceGlasses(htmlShape: string) {
 // Start
 init();
 loadGlassesCatalog();
+
+
+// ── 練習紀錄（規格：學生可查看個人練習與操作紀錄）──
+const practiceLogModal = document.getElementById('practice-log-modal');
+const practiceLogList = document.getElementById('practice-log-list');
+document.getElementById('practice-log-close')?.addEventListener('click', () => practiceLogModal?.classList.add('hidden'));
+document.getElementById('btn-practice-log')?.addEventListener('click', async () => {
+  if (!practiceLogModal || !practiceLogList) return;
+  practiceLogModal.classList.remove('hidden');
+  practiceLogList.innerHTML = '<p class="text-center text-white/40 text-xs py-8">載入中…</p>';
+  try {
+    const res = await fetch(`${API_ORIGIN}/api/ar-practice/sessions`, { headers: myGlassesAuth() });
+    const data = await res.json();
+    const items: any[] = data?.data || data?.sessions || [];
+    if (!items.length) {
+      practiceLogList.innerHTML = '<p class="text-center text-white/40 text-xs py-8">尚無練習紀錄<br>按下方「開始練習」完成一次引導後就會記錄 📋</p>';
+      return;
+    }
+    practiceLogList.innerHTML = items.map((it) => {
+      const d = new Date(it.created_at || it.started_at);
+      const when = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      const done = it.status === 'COMPLETED';
+      const steps = `${it.steps_completed ?? 0}/${it.total_steps ?? '-'}`;
+      const mins = it.duration_seconds != null ? `${Math.max(1, Math.round(it.duration_seconds / 60))} 分` : '—';
+      return `<div class="flex items-center gap-3 bg-white/5 rounded-xl px-3 py-2.5 text-sm">
+        <span class="text-lg">${done ? '✅' : '⏸'}</span>
+        <div class="flex-1 min-w-0">
+          <p class="text-white/90 font-medium">${done ? '完成練習' : '未完成'} · 步驟 ${steps}</p>
+          <p class="text-[11px] text-white/40">${when} · 用時 ${mins}</p>
+        </div>
+      </div>`;
+    }).join('');
+  } catch {
+    practiceLogList.innerHTML = '<p class="text-center text-red-300/80 text-xs py-8">載入失敗，請稍後再試</p>';
+  }
+});

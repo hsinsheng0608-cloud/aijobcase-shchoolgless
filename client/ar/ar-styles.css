@@ -232,6 +232,8 @@ body.ui-clean #guidance-panel,
 body.ui-clean #chat-panel,
 body.ui-clean #optics-panel,
 body.ui-clean #btn-snap-glasses,
+body.ui-clean #control-bar,
+body.ui-clean #steps-list,
 body.ui-clean .mobile-fab,
 body.ui-clean .panel-toggle-top {
     display: none !important;

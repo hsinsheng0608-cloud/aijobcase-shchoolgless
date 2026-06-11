@@ -83,6 +83,10 @@
                             <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             我的試戴照
                         </button>
+                        <button id="btn-practice-log" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-sm text-white/90 transition text-left">
+                            <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            練習紀錄
+                        </button>
                         <button id="btn-tour" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-sm text-white/90 transition text-left">
                             <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             操作導覽
@@ -355,7 +359,7 @@
             </div>
         </div>
         <!-- hidden steps-list for compatibility -->
-        <div id="steps-list" class="hidden"></div>
+        <div id="steps-list" class="hidden absolute left-4 bottom-24 z-30 w-64 max-h-[42vh] overflow-y-auto bg-black/65 backdrop-blur-md rounded-2xl p-3 space-y-1"></div>
 
         <!-- 一鍵淨空/還原：收合所有面板只留相機畫面（桌機/手機通用） -->
         <button id="btn-clean-all" title="一鍵收合/展開所有面板" aria-label="一鍵收合/展開所有面板">
@@ -416,7 +420,7 @@
         </button>
 
         <!-- 底部一鍵拍照：抓目前鏡頭畫面 → 自動去背 → 立即套用（Mac/手機通用） -->
-        <button id="btn-snap-glasses" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 px-5 py-3 rounded-full bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-bold text-sm shadow-xl shadow-black/40 flex items-center gap-2 transition">
+        <button id="btn-snap-glasses" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 px-5 py-3 rounded-full bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-bold text-sm shadow-xl shadow-black/40 flex items-center gap-2 transition">
             <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             <span class="flex flex-col items-start leading-tight whitespace-nowrap">
                 <span>拍我的眼鏡</span>
@@ -453,7 +457,7 @@
         </div>
 
         <!-- Bottom Control Bar（練習計時/儲存已停用：視光數據改為戴上後自動顯示） -->
-        <div id="control-bar" class="hidden absolute bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-black/70 to-transparent px-6 py-4 flex items-center justify-center gap-4" style="display:none!important">
+        <div id="control-bar" class="absolute bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-black/70 to-transparent px-6 py-4 flex items-center justify-center gap-4">
             <button id="btn-start" class="px-5 py-2.5 bg-green-600 hover:bg-green-700 rounded-xl text-sm font-medium flex items-center gap-2 transition">
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                 開始練習
@@ -477,6 +481,19 @@
     </div>
 
     <!-- Practice History Modal -->
+
+        <!-- 練習紀錄彈窗（規格：學生可查看個人練習與操作紀錄） -->
+        <div id="practice-log-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
+            <div class="bg-slate-900 border border-indigo-500/30 rounded-2xl w-[440px] max-w-[92vw] max-h-[80vh] flex flex-col overflow-hidden">
+                <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
+                    <h3 class="text-sm font-semibold text-white/90">📋 我的練習紀錄</h3>
+                    <button id="practice-log-close" class="text-white/40 hover:text-white text-lg leading-none">✕</button>
+                </div>
+                <div id="practice-log-list" class="p-3 overflow-y-auto flex-1 space-y-2">
+                    <p class="text-center text-white/40 text-xs py-8">載入中…</p>
+                </div>
+            </div>
+        </div>
 
         <!-- 從 top-bar 移出：fixed 彈窗不可放在會 transform 的祖先內 -->
 <!-- 去背處理中提示 -->
