@@ -83,6 +83,25 @@
     background: rgba(255, 255, 255, 0.1);
 }
 
+/* AI 思考中…動畫（等待第一個 token 期間顯示） */
+.ai-thinking {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+}
+.ai-thinking-dots i {
+    font-style: normal;
+    animation: ai-blink 1.4s infinite both;
+}
+.ai-thinking-dots i:nth-child(2) { animation-delay: 0.2s; }
+.ai-thinking-dots i:nth-child(3) { animation-delay: 0.4s; }
+@keyframes ai-blink {
+    0%, 80%, 100% { opacity: 0.2; }
+    40% { opacity: 1; }
+}
+
 /* Scrollbar */
 #chat-messages::-webkit-scrollbar,
 #steps-list::-webkit-scrollbar {

@@ -659,19 +659,25 @@ async function handleSendMessage(text: string) {
   recorder.logEvent('CHAT_QUESTION', undefined, { text });
 
   const aiMsg = addChatMessage('', 'ai');
+  // 等待 AI 第一個字前，先顯示「思考中…」動畫，讓使用者知道系統有在運作
+  aiMsg.innerHTML = '<span class="ai-thinking">AI 思考中<span class="ai-thinking-dots"><i>.</i><i>.</i><i>.</i></span></span>';
   let aiText = '';
+  let firstToken = true;
 
   try {
     await sendChatMessage(
       text,
       null,
       (token) => {
+        if (firstToken) { aiMsg.innerHTML = ''; firstToken = false; }  // 收到第一個字 → 移除思考中
         aiText += token;
         // 串流期間隱藏（可能不完整的）[APPLY:...] 指令行
         aiMsg.innerHTML = renderMd(aiText.replace(/\[APPLY:[^\]]*\]?\s*$/, '').trimEnd());
         chatMessages.scrollTop = chatMessages.scrollHeight;
       },
       () => {
+        // 極端情況：成功但完全沒有內容 → 清掉思考中並給提示，不卡住
+        if (firstToken) { aiMsg.textContent = '（這次沒有產生回覆，請再問一次）'; firstToken = false; }
         // 完成：若 AI 帶了 [APPLY] 指令（使用者已口頭同意）→ 直接套用
         const m = aiText.match(/\[APPLY:([^\]]+)\]/);
         if (m) {
