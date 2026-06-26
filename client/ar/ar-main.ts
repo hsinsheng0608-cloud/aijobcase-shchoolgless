@@ -698,7 +698,7 @@ async function handleSendMessage(text: string) {
         const mentioned = findMentionedStyles(aiText);
         if (mentioned.length > 0) attachTryOnButtons(aiMsg, mentioned);
       },
-      (err) => { aiMsg.textContent = `錯誤: ${err}`; },
+      (err) => { firstToken = false; aiMsg.textContent = err; },
       getArContext()
     );
   } finally {

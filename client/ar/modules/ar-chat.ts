@@ -36,7 +36,18 @@ export async function sendChatMessage(
     });
 
     if (!res.ok) {
-      onError(`API 錯誤: ${res.status}`);
+      // 讀後端 JSON：每日上限等情況要顯示友善訊息，而非生硬的「API 錯誤: 429」
+      let friendly = '';
+      try {
+        const body = await res.json();
+        if (body?.error) friendly = body.error;
+      } catch { /* 非 JSON（如 Gemini 直接 429）→ 用通用訊息 */ }
+      if (!friendly) {
+        friendly = res.status === 429
+          ? '目前使用人數較多，請稍候幾秒再試一次 🙏'
+          : `連線發生問題（${res.status}），請稍後再試。`;
+      }
+      onError(friendly);
       return;
     }
 
